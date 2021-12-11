@@ -25,8 +25,8 @@ from typing import Union
 
 import numpy as np
 
-from src.lauepy.hexomap.npmath import norm, normalize, random_three_vector
-from src.lauepy.hexomap.utility import isone, iszero, methdispatch, standarize_euler
+from lauepy.hexomap.npmath import norm, normalize, random_three_vector
+from lauepy.hexomap.utility import isone, iszero, methdispatch, standarize_euler
 
 
 @dataclass

@@ -10,8 +10,8 @@ from functools import reduce
 
 import numpy as np
 
-from src.lauepy.hexomap.npmath import ang_between, random_three_vector
-from src.lauepy.hexomap.orientation import Quaternion, Eulers, Frame, Orientation
+from lauepy.hexomap.npmath import ang_between, random_three_vector
+from lauepy.hexomap.orientation import Quaternion, Eulers, Frame, Orientation
 
 
 class TestQuaternion(unittest.TestCase):

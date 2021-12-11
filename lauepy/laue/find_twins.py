@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from src.lauepy.laue.disorientation import rmat_2_quat, calc_disorient
+from lauepy.laue.disorientation import rmat_2_quat, calc_disorient
 
 
 def find_possible_twins(grain_dict_path, ang_tol=0.1):

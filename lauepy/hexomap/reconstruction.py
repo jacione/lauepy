@@ -22,11 +22,11 @@ import scipy.ndimage as ndi
 from pycuda.compiler import SourceModule
 from pycuda.curandom import MRG32k3aRandomNumberGenerator
 
-from src.lauepy.hexomap import sim_utilities, IntBin
-from src.lauepy.hexomap.RotRep import Misorien2FZ1, Orien2FZ
-from src.lauepy.hexomap.past import *
-from src.lauepy.hexomap.utility import load_kernel_code, print_h5
-import src.lauepy.hexomap as hexomap
+from lauepy.hexomap import sim_utilities
+from lauepy.hexomap import IntBin
+from lauepy.hexomap.RotRep import Misorien2FZ1, Orien2FZ
+from lauepy.hexomap.utility import load_kernel_code, print_h5
+import lauepy.hexomap as hexomap
 
 
 # global ctx

@@ -9,10 +9,9 @@ import sys
 import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
 
-from src.lauepy.hexomap import IntBin
-from src.lauepy.hexomap.orientation import Quaternion
-from src.lauepy.hexomap.orientation import Rodrigues
-from src.lauepy.hexomap.past import *
+from lauepy.hexomap import IntBin
+from lauepy.hexomap.orientation import Quaternion
+from lauepy.hexomap.orientation import Rodrigues
 
 
 #import bokeh
@@ -344,7 +343,7 @@ def plot_binary(rawInitial, NRot=180, NDet=2, idxRot=0,idxLayer=0):
         # single frame
         #idxRot = 0  # index of rotation (0~719)
         #idxLayer = 0
-        b=IntBin.ReadI9BinaryFiles(f'{rawInitial}{idxLayer}_{idxRotSingleFrame:06d}.bin{idxDet}')
+        b= IntBin.ReadI9BinaryFiles(f'{rawInitial}{idxLayer}_{idxRotSingleFrame:06d}.bin{idxDet}')
         
         #ax[0,idxDet].plot(2047-b[0],2047-b[1],'b.')
         #plt.scatter(2047-b[0],2047-b[1],s=1,c='b',marker = 's')
@@ -405,7 +404,7 @@ def plot_binary_with_tiff(fBin, img,alpha=0.5):
     : alpha:
         transparency of binary, (0,1), 0: total transparent. 1: not transparent.
     '''
-    b=IntBin.ReadI9BinaryFiles(fBin)
+    b= IntBin.ReadI9BinaryFiles(fBin)
     plt.imshow(img[::-1,:]) #,origin='lower')
     print(f'shape of b[0]: {b[0].shape}')
     plt.scatter(2047-b[0],2047-b[1],s=0.1,alpha=alpha)

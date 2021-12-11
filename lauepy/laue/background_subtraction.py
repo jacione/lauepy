@@ -9,7 +9,7 @@ import yaml
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from skimage import restoration
 
-from src.lauepy.hexomap import IntBin
+from lauepy.hexomap import IntBin
 
 
 def reduce_img(input_yml, threshold):

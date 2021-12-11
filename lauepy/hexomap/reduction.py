@@ -298,7 +298,7 @@ def integrate_tiff(tiffInitial, startIdx, digit, extention, NImage, NInt, outIni
 
 
 if __name__ == '__main__':
-    import src.lauepy.hexomap.IntBin as IntBin
+    import lauepy.hexomap.IntBin as IntBin
 
     plt.rcParams["figure.figsize"] = (10, 10)
 

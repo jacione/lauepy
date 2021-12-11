@@ -11,9 +11,9 @@ from itertools import product
 import numpy as np
 import yaml
 
-from src.lauepy.hexomap.npmath import norm
-from src.lauepy.hexomap.orientation import Frame
-from src.lauepy.hexomap.utility import iszero
+from lauepy.hexomap.npmath import norm
+from lauepy.hexomap.orientation import Frame
+from lauepy.hexomap.utility import iszero
 
 # -- Define standard frames commmonly used for NF/FF-HEDM --
 STD_FRAMES = {

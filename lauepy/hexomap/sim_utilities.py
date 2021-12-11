@@ -2,7 +2,7 @@
 # https://github.com/Yufeng-shen/nfHEDMtools/blob/master/Simulation.py
 import numpy as np
 
-from src.lauepy.hexomap import utility
+from lauepy.hexomap import utility
 
 
 class Detector:

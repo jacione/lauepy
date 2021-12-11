@@ -5,9 +5,9 @@ Supporting modules for crystal orientation related calculations.
 '''
 
 import os
-import src.lauepy.hexomap as hexomap
+import lauepy.hexomap as hexomap
 import numpy as np
-from src.lauepy.hexomap.utility import load_kernel_code
+from lauepy.hexomap.utility import load_kernel_code
 from pycuda.compiler import SourceModule
 import pycuda.gpuarray as gpuarray
 

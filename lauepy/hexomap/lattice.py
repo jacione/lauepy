@@ -17,10 +17,10 @@ NOTE:
 """
 
 import numpy as np
-from src.lauepy.hexomap.npmath import normalize
-from src.lauepy.hexomap.orientation import Quaternion
-from src.lauepy.hexomap.orientation import Orientation
-from src.lauepy.hexomap.orientation import sym_operator
+from lauepy.hexomap.npmath import normalize
+from lauepy.hexomap.orientation import Quaternion
+from lauepy.hexomap.orientation import Orientation
+from lauepy.hexomap.orientation import sym_operator
 
 
 def in_fundamental_zone(o: "Orientation", lattice: str) -> bool:

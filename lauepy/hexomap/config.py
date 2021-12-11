@@ -8,10 +8,10 @@ HDF5 archive are supported.
 
 import numpy as np
 
-from src.lauepy.hexomap.utility import load_yaml
-from src.lauepy.hexomap.utility import write_yaml
-from src.lauepy.hexomap.utility import load_h5
-from src.lauepy.hexomap.utility import write_h5
+from lauepy.hexomap.utility import load_yaml
+from lauepy.hexomap.utility import write_yaml
+from lauepy.hexomap.utility import load_h5
+from lauepy.hexomap.utility import write_h5
 
 
 class Config:
@@ -93,7 +93,6 @@ class Config:
         # testing loading yaml config file
         import os
         import hexomap
-        from pprint import pprint
         exampleConfigFile = os.path.join(
             os.path.dirname(hexomap.__file__),
             "data/configs/ConfigExample.yml",

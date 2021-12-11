@@ -13,9 +13,9 @@ import tifffile as tfile
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from scipy.spatial.distance import cdist
 
-import src.lauepy.laue.forward_sim as fsim
-from src.lauepy.rxlibs.xmd34 import geometry as geo
-from src.lauepy.rxlibs.xmd34 import lattice as latt
+import lauepy.laue.forward_sim as fsim
+from lauepy.rxlibs.xmd34 import geometry as geo
+from lauepy.rxlibs.xmd34 import lattice as latt
 
 
 def isolate_peaks_test_median(input_yml):

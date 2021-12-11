@@ -10,16 +10,16 @@ import re
 import subprocess as sub
 
 import numpy as np
-from src.lauepy.rxlibs.xmd34 import geometry as geo
-from src.lauepy.rxlibs.xmd34 import lattice as latt
+from lauepy.rxlibs.xmd34 import geometry as geo
+from lauepy.rxlibs.xmd34 import lattice as latt
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
 
-import src.lauepy.laue.rlv_to_spec as so
-import src.lauepy.laue.forward_sim as fsim
-from src.lauepy.laue.disorientation import calc_disorient, rmat_2_quat
-from src.lauepy.laue.pflibs import extract_rlv, rot_wcha_modified
+import lauepy.laue.rlv_to_spec as so
+import lauepy.laue.forward_sim as fsim
+from lauepy.laue.disorientation import calc_disorient, rmat_2_quat
+from lauepy.laue.pflibs import extract_rlv, rot_wcha_modified
 
 
 class AutoLaue:

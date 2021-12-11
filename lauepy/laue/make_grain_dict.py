@@ -5,9 +5,9 @@ from shutil import copyfile
 
 import numpy as np
 
-import src.lauepy.laue.overlay_peaks as op
-from src.lauepy.laue.disorientation import calc_disorient, rmat_2_quat
-from src.lauepy.laue.write_specorient import write_orient as wo
+import lauepy.laue.overlay_peaks as op
+from lauepy.laue.disorientation import calc_disorient, rmat_2_quat
+from lauepy.laue.write_specorient import write_orient as wo
 
 
 def make_grain_dict(output_directory, pattern_dict_file='pattern_dict.json', grain_dict_file='grain_dict.json',

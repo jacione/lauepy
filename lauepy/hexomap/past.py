@@ -11,7 +11,7 @@ NOTE:
 
 import numpy as np
 
-from src.lauepy.hexomap.orientation import Eulers, Rodrigues, Quaternion, sym_operator
+from lauepy.hexomap.orientation import Eulers, Rodrigues, Quaternion, sym_operator
 
 # Backward compatibility for RotRep
 # -- Euler -> Rotation matrix

@@ -8,11 +8,8 @@ import numpy as np
 import tifffile
 from mpi4py import MPI
 
-from src.lauepy.hexomap import IntBin
-from src.lauepy.hexomap import config
-from src.lauepy.hexomap import mpi_log
-from src.lauepy.hexomap import reduction
-from src.lauepy.hexomap.reduction import segmentation_numba
+from lauepy.hexomap import reduction, mpi_log, IntBin, config
+from lauepy.hexomap.reduction import segmentation_numba
 
 
 # noinspection PyUnresolvedReferences

@@ -3,10 +3,10 @@ import pandas as pd
 import scipy.optimize as so
 from scipy.spatial.distance import cdist
 
-import src.lauepy.laue.forward_sim as fsim
-import src.lauepy.laue.pflibs as pf
-from src.lauepy.rxlibs.xmd34 import geometry as geo
-from src.lauepy.rxlibs.xmd34 import lattice as latt
+import lauepy.laue.forward_sim as fsim
+import lauepy.laue.pflibs as pf
+from lauepy.rxlibs.xmd34 import geometry as geo
+from lauepy.rxlibs.xmd34 import lattice as latt
 
 
 def main():

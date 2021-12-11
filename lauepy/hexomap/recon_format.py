@@ -22,7 +22,6 @@ import os
 import sys
 import tifffile
 import h5py
-from src.lauepy.hexomap.past import *
 
 
 def h5printR(item, leading=''):

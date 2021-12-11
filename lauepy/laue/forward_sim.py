@@ -17,9 +17,9 @@ from time import perf_counter as timemeth
 
 import numpy as np
 
-from src.lauepy.rxlibs.xmd34 import geometry as geo
-from src.lauepy.rxlibs.xmd34 import lattice as latt
-from src.lauepy.rxlibs.xmd34 import utils
+from lauepy.rxlibs.xmd34 import geometry as geo
+from lauepy.rxlibs.xmd34 import lattice as latt
+from lauepy.rxlibs.xmd34 import utils
 
 
 def measure(func):
