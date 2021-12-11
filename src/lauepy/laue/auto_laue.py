@@ -1,3 +1,6 @@
+"""
+Written by Matt Wilkin and Yueheng Zhang
+"""
 # Laue Simulation and Deconvolution
 
 import copy
@@ -13,15 +16,29 @@ from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
 
-import rlv_to_spec as so
-import rxlibs_FastForward3 as AP3
-from disorientation import calc_disorient, rmat_2_quat
-from src.lauepy.pflibs import extract_rlv, rot_wcha_modified
+import src.lauepy.laue.rlv_to_spec as so
+import src.lauepy.laue.forward_sim as fsim
+from src.lauepy.laue.disorientation import calc_disorient, rmat_2_quat
+from src.lauepy.laue.pflibs import extract_rlv, rot_wcha_modified
 
 
-class Laue_Sim:
+class AutoLaue:
 
     def __init__(self, crystal_path, det_path, sym='Cubic_Sym.npy'):
+        # These variables must be defined in self.index()
+        self.params = None
+        self.times = None
+        self.comb_sub = None
+        self.goodness = None
+        self.system = None
+        self.pattern_ID = None
+        self.pattern_dict = None
+        self.peak_dict = None
+        self.group_dict = None
+        self.tolerance = None
+        self.frequency = None
+        self.mis_err = None
+
         with open(crystal_path) as f:
             crystal_params = json.load(f)
         with open(det_path) as f:
@@ -330,7 +347,7 @@ class Laue_Sim:
                 #                 for i in ids:
                 #                     self.peak_dict['peak_%s'%i]['Pattern_ID'] = 'pattern_%s'%self.pattern_ID
 
-                blah = np.array([len(xys) for xy in xys])
+                blah = np.array([len(xys) for _ in xys])
 
                 self.pattern_dict['pattern_%d' % self.pattern_ID] = {'Rot_mat': rmat.tolist(),
                                                                      'Goodness': float(np.mean(goodness)),
@@ -371,7 +388,7 @@ class Laue_Sim:
         # print("self.geo_ccd",self.geo_ccd)
         # print("self.xtal",self.xtal)
         # print("xtal_rmat",xtal_rmat)
-        xtalsimu = AP3.FastLaueSimulation_list(hkl_labels, self.geo_ccd, self.xtal, xtal_rmat)
+        xtalsimu = fsim.FastLaueSimulation_list(hkl_labels, self.geo_ccd, self.xtal, xtal_rmat)
         xtalsimu.gen_det_peaks()
         peak_list_r = np.array(xy_exp)
         # pritn(peak_list_r)
@@ -389,7 +406,8 @@ class Laue_Sim:
 
         return distance_sum / len(d), peak_list_f
 
-    def laue_transform(self, phi, chi, theta):
+    @staticmethod
+    def laue_transform(phi, chi, theta):
         data = extract_rlv()
         Mr = rot_wcha_modified(data, ['y', 'z', 'x'], [-theta, chi - 90, -phi])
         in_plane = Mr @ np.array([1, 0, 0])
@@ -397,13 +415,15 @@ class Laue_Sim:
 
         return in_plane, out_plane
 
-    def rot_wcha_modified(self, data, axis, angle):
+    @staticmethod
+    def rot_wcha_modified(data, axis, angle):
         for n in range(len(axis)):
             r = Rotation.from_euler(axis[n], angle[n], degrees=True).as_matrix()
             data = data @ r.T
         return data
 
-    def extract_rlv(self):
+    @staticmethod
+    def extract_rlv():
         find_rlv = re.compile(r"recip_lattice\d\s+{(.+)}")
         file_name = open("./Index.txt").read()
         file_split = re.split("[$]pattern\d", file_name)[1:]

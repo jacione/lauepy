@@ -1,9 +1,12 @@
-from disorientation import rmat_2_quat, calc_disorient
-from itertools import combinations
-from scipy.spatial.transform import Rotation
 import json
-import numpy as np
 import subprocess as sub
+from itertools import combinations
+from pathlib import Path
+
+import numpy as np
+from scipy.spatial.transform import Rotation
+
+from src.lauepy.laue.disorientation import rmat_2_quat, calc_disorient
 
 
 def find_possible_twins(grain_dict_path, ang_tol=0.1):
@@ -49,10 +52,8 @@ def find_twins(in_dict, in_inds, out_file, deg=0, ax_tol=0.1):
         for e in es:
             file.write('\n%s %s %s %s %s %s' % tuple(e))
 
-    # sub.run(['/net/s34data/export/34idc-work/2021/LauePUP921/Analysis/Transfer_to_Sayre/Python_Files/./a.out','0','%s'%deg,'1','0','angle_list.txt'])
-    sub.run(
-        ['/Users/yuehengzhang/Desktop/CMU/LauePUP921/LauePUP921-work/Analysis/Transfer_to_Sayre/Python_Files/./a.out',
-         '0', '1', '1', '0', 'angle_list.txt'])
+    angle_calculator = Path(__file__).resolve().parents[1] / 'utils/a.out'
+    sub.run([f'{angle_calculator}', '0', '1', '1', '0', 'angle_list.txt'])
     data = np.loadtxt('min-misor-angles.txt', skiprows=1)
     if len(list(data.shape)) == 1:
         data = np.array([data])

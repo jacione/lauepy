@@ -10,12 +10,12 @@ import numpy as np
 import pandas as pd
 import scipy.ndimage as ndi
 import tifffile as tfile
-from rxlibs.xmd34 import geometry as geo
-from rxlibs.xmd34 import lattice as latt
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from scipy.spatial.distance import cdist
 
-import rxlibs_forward_problem_python3_AP as AP
+import src.lauepy.laue.forward_sim as fsim
+from src.lauepy.rxlibs.xmd34 import geometry as geo
+from src.lauepy.rxlibs.xmd34 import lattice as latt
 
 
 def isolate_peaks_test_median(input_yml):
@@ -679,7 +679,7 @@ def simulate_substrate(pattern_dict, crystal_path, det_path, raw_image):
         xtal_rmat[i] = vec
 
     energy_cutoff_keV = [3.0, 20]
-    xtal_simu = AP.LaueSimulation(geo_det, xtal, xtal_rmat.T, keV_cutoffs=energy_cutoff_keV,
+    xtal_simu = fsim.LaueSimulation(geo_det, xtal, xtal_rmat.T, keV_cutoffs=energy_cutoff_keV,
                                   plot_range_padding_percent=0)
 
     fig = plt.figure(figsize=(20, 20), dpi=50)

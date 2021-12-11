@@ -11,20 +11,15 @@ NOTE:
 
 import numpy as np
 
-from hexomap.orientation import Eulers
-from hexomap.orientation import Rodrigues
-from hexomap.orientation import Orientation
-from hexomap.orientation import Quaternion
-from hexomap.orientation import Frame
-from hexomap.orientation import sym_operator
+from src.lauepy.hexomap.orientation import Eulers, Rodrigues, Quaternion, sym_operator
 
 # Backward compatibility for RotRep
 # -- Euler -> Rotation matrix
-EulerZXZ2Mat           = lambda e: Eulers(*e).as_matrix
+EulerZXZ2Mat = lambda e: Eulers(*e).as_matrix
 EulerZXZ2MatVectorized = Eulers.eulers_to_matrices
 # -- Rotation matrix -> EulerZXZ
-Mat2EulerZXZ           = lambda m: Eulers.from_matrix(m).as_array
-Mat2EulerZXZVectorized = Eulers.matrices_to_eulers 
+Mat2EulerZXZ = lambda m: Eulers.from_matrix(m).as_array
+Mat2EulerZXZVectorized = Eulers.matrices_to_eulers
 # -- rod_from_quaternion
 # NOTE:
 #   the original function use COLUMN (axis=1) stacked quaternions,
@@ -32,31 +27,36 @@ Mat2EulerZXZVectorized = Eulers.matrices_to_eulers
 #   the other methods in the same module.
 quaternion_from_matrix = lambda m: Quaternion.from_matrix(m).as_array.ravel()
 rod_from_quaternion = lambda qs: Rodrigues.rodrigues_from_quaternions(qs.T).T.ravel()
+
+
 # -- Misorien2FZ1
 def Misorien2FZ1(m1, m2, symtype='Cubic'):
-    dqcore = Quaternion.from_matrix(m1.T@m2)
-    dqs  = [dqcore*op for op in sym_operator(symtype)]
+    dqcore = Quaternion.from_matrix(m1.T @ m2)
+    dqs = [dqcore * op for op in sym_operator(symtype)]
     angs = [q.rot_angle for q in dqs]
-    idx  = np.argmin(angs)
+    idx = np.argmin(angs)
     return dqs[idx].as_matrix, angs[idx]
+
+
 # -- GetSymRotMat
 GetSymRotMat = lambda s='Cubic': np.array([q.as_matrix for q in sym_operator(s)])
 
+
 # Backward compatibility for FZfile
 # --generate_random_rot_mat
-def  generate_random_rot_mat(n, method='new'):
+def generate_random_rot_mat(n, method='new'):
     if method.lower() == 'new':
         return [Quaternion.from_random().as_matrix for _ in range(n)]
     else:
         nEuler = int(n)
-        alpha = np.random.uniform(-np.pi,np.pi,nEuler)
-        gamma = np.random.uniform(-np.pi,np.pi,nEuler)
-        z = np.random.uniform(-1,1,nEuler)
+        alpha = np.random.uniform(-np.pi, np.pi, nEuler)
+        gamma = np.random.uniform(-np.pi, np.pi, nEuler)
+        z = np.random.uniform(-1, 1, nEuler)
         beta = np.arccos(z)
-        result = np.empty([nEuler,3,3])
+        result = np.empty([nEuler, 3, 3])
         for i in range(nEuler):
-            matTmp = EulerZXZ2Mat(np.array([alpha[i],beta[i],gamma[i]]))
-            result[i,:,:] = matTmp
+            matTmp = EulerZXZ2Mat(np.array([alpha[i], beta[i], gamma[i]]))
+            result[i, :, :] = matTmp
         return result
 
 
@@ -87,6 +87,7 @@ def generarte_random_eulerZXZ(eulerIn, range, NAngle=10):
     eulerOut = eulerOut * 180.0 / np.pi
     return eulerOut
 
+
 def Orien2FZ(m, symtype='Cubic'):
     """
     Reduce orientation to fundamental zone, input and output are both active matrices
@@ -112,7 +113,7 @@ def Orien2FZ(m, symtype='Cubic'):
     ops = GetSymRotMat(symtype)
     angle = 6.3
     for op in ops:
-        #print(op)
+        # print(op)
         tmp = m.dot(op)
         cosangle = 0.5 * (tmp.trace() - 1)
         cosangle = min(0.9999999, cosangle)

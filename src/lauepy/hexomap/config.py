@@ -8,10 +8,10 @@ HDF5 archive are supported.
 
 import numpy as np
 
-from hexomap.utility import load_yaml
-from hexomap.utility import write_yaml
-from hexomap.utility import load_h5
-from hexomap.utility import write_h5
+from src.lauepy.hexomap.utility import load_yaml
+from src.lauepy.hexomap.utility import write_yaml
+from src.lauepy.hexomap.utility import load_h5
+from src.lauepy.hexomap.utility import write_h5
 
 
 class Config:

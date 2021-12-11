@@ -2,7 +2,6 @@ import numpy as np
 from math import atan2
 
 
-
 def rod_from_quaternion(quat):
     '''
     adapt from:
@@ -37,6 +36,7 @@ def rod_from_quaternion(quat):
         rod = quat[1:4, :] / np.repeat(np.expand_dims(quat[0, :], axis=0), 3, axis=0)
     return rod
 
+
 def generarte_random_eulerZXZ(eulerIn, range, NAngle=10):
     '''
     generate random euler angles, for detector geometry optimization
@@ -46,21 +46,21 @@ def generarte_random_eulerZXZ(eulerIn, range, NAngle=10):
     :return:
         np.array,[NAngle,3], the first one is the same as input
     '''
-    eulerIn = eulerIn.reshape([-1,3])
+    eulerIn = eulerIn.reshape([-1, 3])
     shape = eulerIn.shape
     eulerIn = eulerIn * np.pi / 180.0
     eulerOut = np.repeat(eulerIn, NAngle, axis=0)
     range = range * np.pi / 180.0
-    #randomAngle = np.random.rand(eulerOut.shape[0], eulerOut.shape[1])
+    # randomAngle = np.random.rand(eulerOut.shape[0], eulerOut.shape[1])
     randomAngle = np.random.normal(0.5, 0.2, eulerOut.shape).reshape(eulerOut.shape)
-    #print(randomAngle)
+    # print(randomAngle)
     eulerOut[:, 0] = eulerOut[:, 0] + range * (randomAngle[:, 0] * 2 - 1)
     eulerOut[:, 2] = eulerOut[:, 2] + range * (randomAngle[:, 2] * 2 - 1)
     z = np.cos(eulerOut[:, 1]) + range * (randomAngle[:, 1] * 2 - 1) * np.sin(eulerOut[:, 1])
-    z[z>1] = 1
-    z[z<-1] = -1
+    z[z > 1] = 1
+    z[z < -1] = -1
     eulerOut[:, 1] = np.arccos(z)
-    eulerOut[0,:] = eulerIn[0,:]
+    eulerOut[0, :] = eulerIn[0, :]
     eulerOut = eulerOut * 180.0 / np.pi
     return eulerOut
 
@@ -162,6 +162,7 @@ def EulerZXZ2Mat(e):
                   [s3 * s2, s2 * c3, c2]])
     return m
 
+
 def EulerZXZ2MatVectorized(e):
     '''
     He Liu
@@ -176,29 +177,31 @@ def EulerZXZ2MatVectorized(e):
     :return: [n_euler,3,3] rotation matrix
     '''
     try:
-        e = e.reshape([-1,3])
+        e = e.reshape([-1, 3])
     except:
         raise ValueError('input euler should be [neuler,3] array')
-    m = np.empty([e.shape[0],3,3])
-    x = e[:,0]
-    y = e[:,1]
-    z = e[:,2]
+    m = np.empty([e.shape[0], 3, 3])
+    x = e[:, 0]
+    y = e[:, 1]
+    z = e[:, 2]
     s1 = np.sin(x)
     s2 = np.sin(y)
     s3 = np.sin(z)
     c1 = np.cos(x)
     c2 = np.cos(y)
     c3 = np.cos(z)
-    m[:,0,0] = c1 * c3 - c2 * s1 * s3
-    m[:,0,1] = -c1 * s3 - c3 * c2 * s1
-    m[:,0,2] =  s1 * s2
-    m[:,1,0] = s1 * c3 + c2 * c1 * s3
-    m[:,1,1] = c1 * c2 * c3 - s1 * s3
-    m[:,1,2] = -c1 * s2
-    m[:,2,0] = s3 * s2
-    m[:,2,1] = s2 * c3
-    m[:,2,2] = c2
+    m[:, 0, 0] = c1 * c3 - c2 * s1 * s3
+    m[:, 0, 1] = -c1 * s3 - c3 * c2 * s1
+    m[:, 0, 2] = s1 * s2
+    m[:, 1, 0] = s1 * c3 + c2 * c1 * s3
+    m[:, 1, 1] = c1 * c2 * c3 - s1 * s3
+    m[:, 1, 2] = -c1 * s2
+    m[:, 2, 0] = s3 * s2
+    m[:, 2, 1] = s2 * c3
+    m[:, 2, 2] = c2
     return m
+
+
 def GetSymRotMat(symtype='Cubic'):
     """
     return an array of active rotation matrices of the input crystal symmetry
@@ -367,7 +370,7 @@ def Orien2FZ(m, symtype='Cubic'):
     ops = GetSymRotMat(symtype)
     angle = 6.3
     for op in ops:
-        #print(op)
+        # print(op)
         tmp = m.dot(op)
         cosangle = 0.5 * (tmp.trace() - 1)
         cosangle = min(0.9999999, cosangle)
@@ -412,7 +415,7 @@ def Misorien2FZ1(m1, m2, symtype='Cubic'):
     angle:  scalar
             The misorientation angle.
     """
-    #m2 = np.matrix(m2)
+    # m2 = np.matrix(m2)
     ops = GetSymRotMat(symtype)
     angle = 6.3
     for op in ops:
@@ -454,7 +457,7 @@ def Misorien2FZ2(m1, m2, symtype='Cubic'):
     dm = (m2.T).dot(m1)
     ops = GetSymRotMat(symtype)
     angle = 6.3
-    axis  = np.array([0,0,1])
+    axis = np.array([0, 0, 1])
     for op1 in ops:
         for op2 in ops:
             tmp = op2.dot(dm.dot(op1))
@@ -565,19 +568,21 @@ def Mat2Euler(m):
     if z < 0: z = z + 2 * np.pi
     return x, y, z
 
-def MisorinEulerZXZ(euler1,euler2, symtype='Cubic', degree=True):
+
+def MisorinEulerZXZ(euler1, euler2, symtype='Cubic', degree=True):
     if euler2.shape != euler1.shape:
-        raise  ValueError('input euler shape need to be the same')
+        raise ValueError('input euler shape need to be the same')
     if degree:
         m1 = EulerZXZ2MatVectorized(euler1 * np.pi / 180.0)
         m2 = EulerZXZ2MatVectorized(euler2 * np.pi / 180.0)
         misorien = np.empty(m1.shape[0])
         for i in range(m1.shape[0]):
-            _, misorien[i] = Misorien2FZ1(m1[i,:],m2[i,:],symtype)
+            _, misorien[i] = Misorien2FZ1(m1[i, :], m2[i, :], symtype)
         print('misorien in degree')
         return misorien * 180.0 / np.pi
     else:
         print('to be implemented')
+
 
 def Mat2EulerZXZ(m):
     """
@@ -600,6 +605,8 @@ def Mat2EulerZXZ(m):
     if y < 0: y = y + 2 * np.pi
     if z < 0: z = z + 2 * np.pi
     return x, y, z
+
+
 def Mat2EulerZXZVectorized(m):
     '''
     he liu
@@ -612,15 +619,15 @@ def Mat2EulerZXZVectorized(m):
     :return: [n_mat,3] array, euler angles
     '''
     try:
-        m = m.reshape([-1,3,3])
+        m = m.reshape([-1, 3, 3])
     except:
         raise ValueError('input mat should be [n_mat,3,3]')
     threshold = 0.9999999
-    euler = np.empty([m.shape[0],3])
-    idx0 = m[:,2,2] > threshold
-    idx1 = m[:,2,2] < -threshold
-    idx2 = np.bitwise_and(m[:,2,2] < threshold,m[:,2,2] > -threshold)
-    #print(m[idx0,0,0])
+    euler = np.empty([m.shape[0], 3])
+    idx0 = m[:, 2, 2] > threshold
+    idx1 = m[:, 2, 2] < -threshold
+    idx2 = np.bitwise_and(m[:, 2, 2] < threshold, m[:, 2, 2] > -threshold)
+    # print(m[idx0,0,0])
     euler[idx0, 0] = 0
     euler[idx0, 1] = 0
     euler[idx0, 2] = np.arctan2(m[idx0, 1, 0], m[idx0, 0, 0])
@@ -630,23 +637,25 @@ def Mat2EulerZXZVectorized(m):
     euler[idx2, 0] = np.arctan2(m[idx2, 0, 2], -m[idx2, 1, 2])
     euler[idx2, 1] = np.arctan2(np.sqrt(m[idx2, 2, 0] ** 2 + m[idx2, 2, 1] ** 2), m[idx2, 2, 2])
     euler[idx2, 2] = np.arctan2(m[idx2, 2, 0], m[idx2, 2, 1])
-    euler[euler[:, 0] < 0, 0] = euler[euler[:, 0] < 0, 0]+2 * np.pi
+    euler[euler[:, 0] < 0, 0] = euler[euler[:, 0] < 0, 0] + 2 * np.pi
     euler[euler[:, 1] < 0, 1] = euler[euler[:, 1] < 0, 1] + 2 * np.pi
     euler[euler[:, 2] < 0, 2] = euler[euler[:, 2] < 0, 2] + 2 * np.pi
     return euler
+
+
 def benchmark_e2m():
     # benchmark speed of vectorized version and not
     nEuler = 10000
-    alpha = np.random.uniform(-np.pi,np.pi,nEuler)
-    gamma = np.random.uniform(-np.pi,np.pi,nEuler)
-    z = np.random.uniform(-1,1,nEuler)
+    alpha = np.random.uniform(-np.pi, np.pi, nEuler)
+    gamma = np.random.uniform(-np.pi, np.pi, nEuler)
+    z = np.random.uniform(-1, 1, nEuler)
     beta = np.arccos(z)
-    euler = np.concatenate([alpha[:,np.newaxis],beta[:,np.newaxis],gamma[:,np.newaxis]],axis=1)
+    euler = np.concatenate([alpha[:, np.newaxis], beta[:, np.newaxis], gamma[:, np.newaxis]], axis=1)
     import time
 
     start = time.time()
     for i in range(euler.shape[0]):
-        m = EulerZXZ2Mat(euler[i,:])
+        m = EulerZXZ2Mat(euler[i, :])
     end = time.time()
     print('EulerZXZ2Mat time: {0}'.format(end - start))
     print(m)
@@ -654,83 +663,84 @@ def benchmark_e2m():
     m = EulerZXZ2MatVectorized(euler)
     end = time.time()
     print('EulerZXZ2MatVectorized time: {0}'.format(end - start))
-    print(m[-1,:,:])
-    
-    
+    print(m[-1, :, :])
+
+
 def get_twin_matrices(symType='FCC'):
     '''
     get twin matrices for fcc, bcc, or hexagonal
     symType: 'FCC','BCC' or 'Hexagonal'
     '''
     if symType == 'FCC':
-        m = np.empty([4,3,3])
-        m[0,:,:] = 1.0 / 3.0 * np.array([[-1, 2, 2],
-                                         [ 2,-1, 2],
-                                         [ 2, 2,-1]])
-        
-        m[1,:,:] = 1.0 / 3.0 * np.array([[-1,-2,-2],
-                                         [-2,-1, 2],
-                                         [-2, 2,-1]])
-        
-        m[2,:,:] = 1.0 / 3.0 * np.array([[-1,-2, 2],
-                                         [-2,-1,-2],
-                                         [ 2,-2,-1]])
-        
-        m[3,:,:] = 1.0 / 3.0 * np.array([[-1, 2,-2],
-                                         [ 2,-1,-2],
-                                         [-2,-2,-1]])
-    elif symType == 'BCC':
-        m = np.empty([12,3,3])
-        m[0,:,:] = 1.0 / 3.0 * np.array([[-2, 1, 2],
-                                         [ 1,-2, 2],
-                                         [ 2, 2, 1]])
-        
-        m[1,:,:] = 1.0 / 3.0 * np.array([[-2,-2,-1],
-                                         [-2, 1, 2],
-                                         [-1, 2,-2]])
-        
-        m[2,:,:] = 1.0 / 3.0 * np.array([[ 1,-2, 2],
-                                         [-2,-2,-1],
-                                         [ 2,-1,-2]])
+        m = np.empty([4, 3, 3])
+        m[0, :, :] = 1.0 / 3.0 * np.array([[-1, 2, 2],
+                                           [2, -1, 2],
+                                           [2, 2, -1]])
 
-        m[3,:,:] = 1.0 / 3.0 * np.array([[-2, 1,-2],
-                                         [ 1,-2,-2],
-                                         [-2,-2, 1]])
-        
-        m[4,:,:] = 1.0 / 3.0 * np.array([[-2,-2, 1],
-                                         [-2, 1,-2],
-                                         [ 1,-2,-2]])
-        
-        m[5,:,:] = 1.0 / 3.0 * np.array([[ 1,-2,-2],
-                                         [-2,-2, 1],
-                                         [-2, 1,-2]])
-        
-        m[6,:,:] = 1.0 / 3.0 * np.array([[-2,-1, 2],
-                                         [-1,-2,-2],
-                                         [ 2,-2, 1]])
-        
-        m[7,:,:] = 1.0 / 3.0 * np.array([[-2, 2,-1],
-                                         [ 2, 1,-2],
-                                         [-1,-2,-2]])
-        
-        m[8,:,:] = 1.0 / 3.0 * np.array([[ 1, 2, 2],
-                                         [ 2,-2, 1],
-                                         [ 2, 1,-2]])
-        
-        m[9,:,:] = 1.0 / 3.0 * np.array([[-2,-1,-2],
-                                         [-1,-2, 2],
-                                         [-2, 2, 1]])
-        
-        m[10,:,:] = 1.0 / 3.0 * np.array([[-2, 2, 1],
-                                          [ 2, 1, 2],
-                                          [ 1, 2,-2]])
-        
-        m[11,:,:] = 1.0 / 3.0 * np.array([[ 1, 2,-2],
-                                          [ 2,-2,-1],
-                                          [-2,-1,-2]])
+        m[1, :, :] = 1.0 / 3.0 * np.array([[-1, -2, -2],
+                                           [-2, -1, 2],
+                                           [-2, 2, -1]])
+
+        m[2, :, :] = 1.0 / 3.0 * np.array([[-1, -2, 2],
+                                           [-2, -1, -2],
+                                           [2, -2, -1]])
+
+        m[3, :, :] = 1.0 / 3.0 * np.array([[-1, 2, -2],
+                                           [2, -1, -2],
+                                           [-2, -2, -1]])
+    elif symType == 'BCC':
+        m = np.empty([12, 3, 3])
+        m[0, :, :] = 1.0 / 3.0 * np.array([[-2, 1, 2],
+                                           [1, -2, 2],
+                                           [2, 2, 1]])
+
+        m[1, :, :] = 1.0 / 3.0 * np.array([[-2, -2, -1],
+                                           [-2, 1, 2],
+                                           [-1, 2, -2]])
+
+        m[2, :, :] = 1.0 / 3.0 * np.array([[1, -2, 2],
+                                           [-2, -2, -1],
+                                           [2, -1, -2]])
+
+        m[3, :, :] = 1.0 / 3.0 * np.array([[-2, 1, -2],
+                                           [1, -2, -2],
+                                           [-2, -2, 1]])
+
+        m[4, :, :] = 1.0 / 3.0 * np.array([[-2, -2, 1],
+                                           [-2, 1, -2],
+                                           [1, -2, -2]])
+
+        m[5, :, :] = 1.0 / 3.0 * np.array([[1, -2, -2],
+                                           [-2, -2, 1],
+                                           [-2, 1, -2]])
+
+        m[6, :, :] = 1.0 / 3.0 * np.array([[-2, -1, 2],
+                                           [-1, -2, -2],
+                                           [2, -2, 1]])
+
+        m[7, :, :] = 1.0 / 3.0 * np.array([[-2, 2, -1],
+                                           [2, 1, -2],
+                                           [-1, -2, -2]])
+
+        m[8, :, :] = 1.0 / 3.0 * np.array([[1, 2, 2],
+                                           [2, -2, 1],
+                                           [2, 1, -2]])
+
+        m[9, :, :] = 1.0 / 3.0 * np.array([[-2, -1, -2],
+                                           [-1, -2, 2],
+                                           [-2, 2, 1]])
+
+        m[10, :, :] = 1.0 / 3.0 * np.array([[-2, 2, 1],
+                                            [2, 1, 2],
+                                            [1, 2, -2]])
+
+        m[11, :, :] = 1.0 / 3.0 * np.array([[1, 2, -2],
+                                            [2, -2, -1],
+                                            [-2, -1, -2]])
     else:
         raise NotImplementedError()
     return m
+
 
 def benchmark_m2e():
     # benchmark speed of vectorized version m2e
@@ -739,22 +749,24 @@ def benchmark_m2e():
     m = FZfile.generate_random_rot_mat(10000)
     start = time.time()
     for i in range(m.shape[0]):
-        e = Mat2EulerZXZ(m[i,:,:])
+        e = Mat2EulerZXZ(m[i, :, :])
     end = time.time()
-    print(end-start)
+    print(end - start)
     print(e)
     start = time.time()
     e = Mat2EulerZXZVectorized(m)
     end = time.time()
-    print(end-start)
-    print(e[-1,:])
+    print(end - start)
+    print(e[-1, :])
+
 
 def test_gen_random_eulerzxz():
-    euler = np.array([[90.0,90.0,0.0]])
+    euler = np.array([[90.0, 90.0, 0.0]])
     eulerOut = generarte_random_eulerZXZ(euler, 1)
-    print(MisorinEulerZXZ(euler.repeat(10,axis=0),eulerOut,symtype='Hexagonal'))
+    print(MisorinEulerZXZ(euler.repeat(10, axis=0), eulerOut, symtype='Hexagonal'))
     print(eulerOut)
 
-if __name__ =='__main__':
-    #benchmark_m2e()
+
+if __name__ == '__main__':
+    # benchmark_m2e()
     test_gen_random_eulerzxz()

@@ -3,20 +3,18 @@ Writen by He Liu
 Wed Apr 26 2017
 This script will contains the basic tool for reading mic file and plot them.
 '''
-import numpy as np
-import matplotlib
-#matplotlib.use('GTKAgg')
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection
-from matplotlib.collections import PolyCollection
-from hexomap.past import *
-from hexomap import IntBin
-import sys
-from hexomap.orientation import Quaternion
-from hexomap.orientation import Eulers
-from hexomap.orientation import Rodrigues
 import os
+import sys
+
+import matplotlib.pyplot as plt
+from matplotlib.collections import PolyCollection
+
+from src.lauepy.hexomap import IntBin
+from src.lauepy.hexomap.orientation import Quaternion
+from src.lauepy.hexomap.orientation import Rodrigues
+from src.lauepy.hexomap.past import *
+
+
 #import bokeh
 
 def dist_to_line(point,line):

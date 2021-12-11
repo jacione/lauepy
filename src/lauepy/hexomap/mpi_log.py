@@ -1,5 +1,5 @@
-from mpi4py import MPI 
-import array
+from mpi4py import MPI
+
 
 class MPILogFile(object):
     def __init__(self, comm, filename, mode):
@@ -16,9 +16,10 @@ class MPILogFile(object):
         self.file_handle.Sync()
         self.file_handle.Close()
 
+
 comm = MPI.COMM_WORLD
 logfile = MPILogFile(
-    comm, "test.log", 
+    comm, "test.log",
     MPI.MODE_WRONLY | MPI.MODE_CREATE | MPI.MODE_APPEND
 )
 logfile.write("hello")

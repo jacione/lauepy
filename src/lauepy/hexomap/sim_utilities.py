@@ -1,12 +1,8 @@
 # this part copy from Yufeng Shen's Code:
-#https://github.com/Yufeng-shen/nfHEDMtools/blob/master/Simulation.py
+# https://github.com/Yufeng-shen/nfHEDMtools/blob/master/Simulation.py
 import numpy as np
-from fractions import Fraction
-from math import floor
-from hexomap import utility
-# from matplotlib import path
 
-
+from src.lauepy.hexomap import utility
 
 
 class Detector:
@@ -28,15 +24,15 @@ class Detector:
         self.Kvector = tilt.dot(self.Kvector)
 
     def IntersectionIdx(self, ScatterSrc, TwoTheta, eta, bIdx=True):
-        #print('eta:{0}'.format(eta))
-        #self.Print()
+        # print('eta:{0}'.format(eta))
+        # self.Print()
         dist = self.Norm.dot(self.CoordOrigin - ScatterSrc)
         scatterdir = np.array([np.cos(TwoTheta), np.sin(TwoTheta) * np.sin(eta), np.sin(TwoTheta) * np.cos(eta)])
         InterPos = dist / (self.Norm.dot(scatterdir)) * scatterdir + ScatterSrc
         J = (self.Jvector.dot(InterPos - self.CoordOrigin) / self.PixelJ)
         K = (self.Kvector.dot(InterPos - self.CoordOrigin) / self.PixelK)
         if 0 <= int(J) < self.NPixelJ and 0 <= int(K) < self.NPixelK:
-            if bIdx == True:
+            if bIdx:
                 return int(J), int(K)
             else:
                 return J, K
@@ -161,7 +157,7 @@ class CrystalStr:
             self.PrimB = 3.9053 * np.array([0, 1, 0])
             self.PrimC = 3.9053 * np.array([0, 0, 1])
             self.addAtom([0, 0, 0], 38)
-            #self.addAtom([0.5, 0.5, 0.5], 22)
+            # self.addAtom([0.5, 0.5, 0.5], 22)
             self.addAtom([0.5, 0.5, 0], 8)
             self.addAtom([0, 0.5, 0.5], 8)
             self.addAtom([0.5, 0, 0.5], 8)
@@ -171,12 +167,12 @@ class CrystalStr:
             self.PrimB = 3.9053 * np.array([0, 1, 0])
             self.PrimC = 3.9053 * np.array([0, 0, 1])
             self.addAtom([0, 0, 0], 38)
-            #self.addAtom([0.5, 0.5, 0.5], 22)
+            # self.addAtom([0.5, 0.5, 0.5], 22)
             self.addAtom([0.5, 0.5, 0], 38)
             self.addAtom([0, 0.5, 0.5], 38)
             self.addAtom([0.5, 0, 0.5], 38)
 
-        
+
         elif material == 'Ti7':
             self.symtype = 'Hexagonal'
             self.PrimA = 2.92539 * np.array([1, 0, 0])
@@ -188,7 +184,7 @@ class CrystalStr:
             # not tested, use Mg to approximate
             self.symtype = 'Hexagonal'
             a = 3.2094
-            c = 5.2107 
+            c = 5.2107
             self.PrimA = a * np.array([1, 0, 0])
             self.PrimB = a * np.array([np.cos(np.pi * 2 / 3), np.sin(np.pi * 2 / 3), 0])
             self.PrimC = c * np.array([0, 0, 1])
@@ -214,7 +210,7 @@ class CrystalStr:
             self.symtype = 'Cubic'
             self.PrimA = 5.471 * np.array([1, 0, 0])
             self.PrimB = 5.471 * np.array([0, 1, 0])
-            self.PrimC = 5.471 * np.array([0, 0, 1])  
+            self.PrimC = 5.471 * np.array([0, 0, 1])
             self.addAtom([0, 0, 0], 92)
         elif material.lower() in ['zr', ' zirconium']:
             # hexagonal lattice
@@ -237,7 +233,7 @@ class CrystalStr:
             elif d['symtype'] == 'Cubic':
                 self.PrimA = d['PrimA'] * np.array([1, 0, 0])
                 self.PrimB = d['PrimB'] * np.array([0, 1, 0])
-                self.PrimC = d['PrimC'] * np.array([0, 0, 1]) 
+                self.PrimC = d['PrimC'] * np.array([0, 0, 1])
             else:
                 raise NotImplementedError('symType should be Cubic or Hexagonal')
             for key, value in d['Atom'].items():
@@ -352,8 +348,8 @@ def GetProjectedVertex(Det1, sample, orien, etalimit, grainpos, getPeaksInfo=Fal
         return Peaks, Gs, PeaksInfo
     return Peaks, Gs
 
-def main():
 
+def main():
     m0 = CrystalStr('../examples/material_example/hexagonal_Zr.yml')
     m1 = CrystalStr('zr')
     d0 = m0.__dict__
@@ -390,6 +386,8 @@ def main():
     print("====================== fcc ====================")
     print(d0)
     print(d1)
+
+
 if __name__ == "__main__":
     # execute only if run as a script
     main()

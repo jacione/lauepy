@@ -16,13 +16,11 @@ NOTE:
 
 """
 
-
 import numpy as np
-from dataclasses           import dataclass
-from hexomap.npmath        import normalize
-from hexomap.orientation   import Quaternion
-from hexomap.orientation   import Orientation
-from hexomap.orientation   import sym_operator
+from src.lauepy.hexomap.npmath import normalize
+from src.lauepy.hexomap.orientation import Quaternion
+from src.lauepy.hexomap.orientation import Orientation
+from src.lauepy.hexomap.orientation import sym_operator
 
 
 def in_fundamental_zone(o: "Orientation", lattice: str) -> bool:
@@ -51,23 +49,23 @@ def in_fundamental_zone(o: "Orientation", lattice: str) -> bool:
     #  The following comparison is to evaluate 
     if lattice.lower() in ['cubic', 'bcc', 'fcc']:
         sqrt2 = np.sqrt(2)
-        return  sqrt2-1.0 >= r[0] \
-            and sqrt2-1.0 >= r[1] \
-            and sqrt2-1.0 >= r[2] \
-            and 1.0 >= r[0] + r[1] + r[2]
+        return sqrt2 - 1.0 >= r[0] \
+               and sqrt2 - 1.0 >= r[1] \
+               and sqrt2 - 1.0 >= r[2] \
+               and 1.0 >= r[0] + r[1] + r[2]
     elif lattice.lower() in ['hexagonal', 'hex', 'hcp']:
         sqrt3 = np.sqrt(3)
-        return  1.0 >= r[0] and 1.0 >= r[1] and 1.0 >= r[2] \
-            and 2.0 >= sqrt3*r[0] + r[1] \
-            and 2.0 >= sqrt3*r[1] + r[0] \
-            and 2.0 >= sqrt3 + r[2]
+        return 1.0 >= r[0] and 1.0 >= r[1] and 1.0 >= r[2] \
+               and 2.0 >= sqrt3 * r[0] + r[1] \
+               and 2.0 >= sqrt3 * r[1] + r[0] \
+               and 2.0 >= sqrt3 + r[2]
     elif lattice.lower() in ['tetragonal', 'tet']:
         sqrt2 = np.sqrt(2)
-        return  1.0 >= r[0] and 1.0 >= r[1] \
-            and sqrt2 >= r[0] + r[1] \
-            and sqrt2 >= r[2] + 1.0
+        return 1.0 >= r[0] and 1.0 >= r[1] \
+               and sqrt2 >= r[0] + r[1] \
+               and sqrt2 >= r[2] + 1.0
     elif lattice.lower() in ['orthorhombic', 'orth']:
-        return  1.0 >= r[0] and 1.0 >= r[1] and 1.0 >= r[2]
+        return 1.0 >= r[0] and 1.0 >= r[1] and 1.0 >= r[2]
     else:
         return True
 
@@ -94,14 +92,14 @@ def to_fundamental_zone(o: 'Orientation', lattice: str) -> "Orientation":
     """
     _q = Quaternion(*o.q.as_array)
     for symop in sym_operator(lattice):
-        o.q = _q*symop
+        o.q = _q * symop
         if in_fundamental_zone(o, lattice):
             return o
 
 
 def in_standard_stereographic_triangle(o: 'Orientation',
                                        lattice: str,
-                                    ) -> bool:
+                                       ) -> bool:
     """
     Description
     -----------
@@ -132,22 +130,22 @@ def in_standard_stereographic_triangle(o: 'Orientation',
     r = o.as_rodrigues.as_array
 
     if lattice.lower() in ['cubic', 'bcc', 'fcc']:
-        return  r[0] >= r[1] \
-            and r[1] >= r[2] \
-            and r[2] >= 0.0
+        return r[0] >= r[1] \
+               and r[1] >= r[2] \
+               and r[2] >= 0.0
     elif lattice.lower() in ['hexagonal', 'hcp', 'hex']:
         sqrt3 = np.sqrt(3)
-        return  r[0] >= sqrt3*r[1]\
-            and r[1] >= 0 \
-            and r[2] >= 0
+        return r[0] >= sqrt3 * r[1] \
+               and r[1] >= 0 \
+               and r[2] >= 0
     elif lattice.lower() in ['tetragonal', 'tet']:
-        return  r[0] >= r[1] \
-            and r[1] >= 0 \
-            and r[2] >= 0
+        return r[0] >= r[1] \
+               and r[1] >= 0 \
+               and r[2] >= 0
     elif lattice.lower() in ['orthorhombic', 'ortho']:
-        return  r[0] >= 0 \
-            and r[1] >= 0 \
-            and r[2] >= 0
+        return r[0] >= 0 \
+               and r[1] >= 0 \
+               and r[2] >= 0
     else:
         return True
 
@@ -155,7 +153,7 @@ def in_standard_stereographic_triangle(o: 'Orientation',
 def calc_inverse_pole_figure_color(o: 'Orientation',
                                    p: np.ndarray,
                                    lattice: str,
-                                ) -> tuple:
+                                   ) -> tuple:
     """
     Description
     -----------
@@ -187,7 +185,7 @@ def calc_inverse_pole_figure_color(o: 'Orientation',
         RGB color tuple with range between 0 and 1 
     """
     # convert the pole from the common (sample) frame to the crystal frame
-    rot_m = o.as_matrix     # active rotation matrix
+    rot_m = o.as_matrix  # active rotation matrix
     p = np.dot(rot_m.T, p)  # bring pole to the crystal frame
     p = normalize(p)
 
@@ -207,8 +205,8 @@ def calc_inverse_pole_figure_color(o: 'Orientation',
         if np.all(ipf < 0):
             continue  # not in the SST, check next equivalent orientation
         else:
-            ipf = np.minimum(normalize(ipf)**0.5, np.ones(3))
-            return ipf/ipf.max()
+            ipf = np.minimum(normalize(ipf) ** 0.5, np.ones(3))
+            return ipf / ipf.max()
     # if we cannot find any, something is seriously wrong
     raise ValueError("Cannot find equivalent orientation in SST")
 
@@ -231,21 +229,21 @@ def get_inverse_pole_figure_ref_poles(lattice: str):
     """
     if lattice.lower() in ['cubic', 'bcc', 'fcc']:
         basis = np.array([
-            [0, 0, 1],   # red pole
-            [1, 0, 1],   # green pole
-            [1, 1, 1],   # blue pole
+            [0, 0, 1],  # red pole
+            [1, 0, 1],  # green pole
+            [1, 1, 1],  # blue pole
         ])
     elif lattice.lower() in ['hexagonal', 'hcp', 'hex']:
         basis = np.array([
-            [0,              0, 1],  # c-axis, [0001], red
-            [1,              0, 0],  # a-axis, [2-1-10], green
-            [np.sqrt(3)/2, 0.5, 0],  # [10-10], blue
+            [0, 0, 1],  # c-axis, [0001], red
+            [1, 0, 0],  # a-axis, [2-1-10], green
+            [np.sqrt(3) / 2, 0.5, 0],  # [10-10], blue
         ])
     elif lattice.lower() in ['tetragonal', 'tet']:
         basis = np.array([
             [0, 0, 1],  # red
             [1, 0, 0],  # green
-            [1, 1 ,0],  # blue
+            [1, 1, 0],  # blue
         ])
     elif lattice.lower() in ['orthorhombic', 'ortho']:
         basis = np.array([

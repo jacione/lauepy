@@ -6,7 +6,6 @@ import numpy as np
 import scipy.ndimage as ndi
 import tifffile
 import yaml
-from scipy.ndimage import median_filter
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from skimage import restoration
 
@@ -24,10 +23,7 @@ def reduce_img(input_yml, threshold):
     with open(input_yml, 'r') as yml_file:
         x = yaml.load(yml_file)
 
-    NDet = x['NDet']
-    NLayer = x['NLayer']
     NRot = x['NRot']
-    baseline = x['baseline']
     digitLength = x['digitLength']
     extension = x['extension']
     identifier = x['identifier']
@@ -58,17 +54,11 @@ def reduce_img_laplacian(input_yml, threshold):
     with open(input_yml, 'r') as yml_file:
         x = yaml.load(yml_file)
 
-    NDet = x['NDet']
-    NLayer = x['NLayer']
     NRot = x['NRot']
-    baseline = x['baseline']
-    digitLength = x['digitLength']
     extension = x['extension']
     identifier = x['identifier']
-    idxLayer = x['idxLayer']
 
     dataDirectory = x['dataDirectory']
-    initial = dataDirectory + identifier + '/' + identifier + '_'
     outputDirectory = identifier + '_reduced'
     startIdx = x['startIdx']
 
@@ -83,8 +73,9 @@ def reduce_img_laplacian(input_yml, threshold):
 
 def rb_background(input_yml, r=1):
     """
-    if the median background has the issue of uneven features, we can adopt the rb_background method to remove uneven pattern.
-    The rolling-ball algorithm estimates the background intensity of a grayscale image in case of uneven exposure.
+    if the median background has the issue of uneven features, we can adopt the rb_background method to remove uneven
+    pattern. The rolling-ball algorithm estimates the background intensity of a grayscale image in case of uneven
+    exposure.
 
     input:
     input_yml: the file concludes input image path,bkg path,output path
@@ -167,7 +158,7 @@ def rb_background(input_yml, r=1):
         # plt.title('raw image',fontsize = 12)
         # plt.imshow(raw,vmax = 500)
         corrected_raw = remove_badpixel(raw)
-        mf_bkg = median_filter(corrected_raw, size=50)
+        mf_bkg = ndi.median_filter(corrected_raw, size=50)
         sub = corrected_raw - mf_bkg
         # fig = plt.figure(figsize=(40,40))
         # plt.title('sub image after subtracting median_bkg',fontsize = 12)
@@ -184,7 +175,7 @@ def rb_background(input_yml, r=1):
         lV.append(median_value_of_sub)
         lV_max.append(max_value_of_sub)
         tifffile.imsave(dataDirectory + outputDirectory + '/' + outputDirectory + '_%05d%s' % (idxTmp, extension), sub)
-    fig = plt.figure(figsize=(40, 40))
+    plt.figure(figsize=(40, 40))
     plt.plot(lV)
     plt.show()
     plt.title('median value of subtracted images, abnormal frames have high value')
@@ -205,7 +196,7 @@ def find_outlier_pixels(data, tolerance=10e7, worry_about_edges=True):
     #
     # The function returns a list of hot pixels and also an image with with hot pixels removed
 
-    blurred = median_filter(data, size=2)
+    blurred = ndi.median_filter(data, size=2)
     difference = data - blurred
     threshold = tolerance
 
@@ -396,7 +387,7 @@ def get_peaklist(image, threshold_max=1000, threshold=3, minimal_pixel=5):
 
     locations = find_objects(labels)  # find the slices where these peaks exist
 
-    #         c = np.arange(0,num_feature+1)
+    # c = np.arange(0,num_feature+1)
 
     lPos = center_of_mass(frame, labels=labels, index=c[1:])
 
@@ -425,17 +416,15 @@ def get_peaklist(image, threshold_max=1000, threshold=3, minimal_pixel=5):
     #     print('Number of Peaks:',len(list(peak_dict)))
 
     real_xys = [(peak_dict[pk]['XY']) for pk in peak_dict]
-    FullPeakList = {}
-    FullPeakList['x0'] = []
-    FullPeakList['y0'] = []
+    FullPeakList = {'x0': [], 'y0': []}
     for peak in real_xys:
         FullPeakList['x0'].append(peak[0])
         FullPeakList['y0'].append(peak[1])
 
-    fig = plt.figure(figsize=(10, 10), dpi=50)
-    ax = fig.add_subplot(111)
-    ax.imshow(filename[:, :], vmax=100)
-    ax.scatter(FullPeakList['x0'], FullPeakList['y0'], alpha=0.7, edgecolor='red', facecolor='None', s=160)
+    # fig = plt.figure(figsize=(10, 10), dpi=50)
+    # ax = fig.add_subplot(111)
+    # ax.imshow(filename[:, :], vmax=100)
+    # ax.scatter(FullPeakList['x0'], FullPeakList['y0'], alpha=0.7, edgecolor='red', facecolor='None', s=160)
 
     # open('peak_sapphire.txt', 'w') as json_file:
     #     json.dump(peak_dict, json_file)    

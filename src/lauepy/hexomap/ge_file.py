@@ -51,7 +51,6 @@ __licence__ = "MIT"
 
 import os
 import numpy
-import struct
 # import logging
 # logger = logging.getLogger(__name__)
 # from .fabioimage import FabioImage

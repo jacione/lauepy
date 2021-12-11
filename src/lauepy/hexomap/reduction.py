@@ -1,13 +1,13 @@
+import os
+import sys
+import time
+
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.ndimage as ndi
-import glob
-import time
-from numba import jit
 import tifffile
-import os
-import sys
-import cv2
+from numba import jit
 
 
 def median_background(initial, startIdx, outInitial, NRot=720, NDet=2, NLayer=1, layerIdx=[0], digitLength=5,

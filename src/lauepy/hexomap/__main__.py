@@ -4,12 +4,10 @@ Usage:
     cd to module root directory
     run: python -m hexomap
 '''
-from hexomap import config
-import numpy as np
-from hexomap import reconstruction
-from hexomap import MicFileTool
+from src.lauepy.hexomap import config
+from src.lauepy.hexomap import reconstruction
 import os
-import hexomap
+import src.lauepy.hexomap as hexomap
 
 c = config.Config().load(os.path.abspath(os.path.join(hexomap.__file__ ,"../..")) +'/examples/johnson_aug18_demo/demo_gold_twiddle_3.h5')
 print(c)

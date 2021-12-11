@@ -1,10 +1,10 @@
 import numpy as np
-from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation
 
 
 def rot(data, axis, angle):
     for n in range(len(axis)):
-        r = R.from_euler(axis[n], angle[n], degrees=True).as_matrix()
+        r = Rotation.from_euler(axis[n], angle[n], degrees=True).as_matrix()
         data = r @ data
         data = data.T
     return data

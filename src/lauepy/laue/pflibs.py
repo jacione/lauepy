@@ -20,8 +20,8 @@ def get_peaklist(filename, threshold):
     pathname = folder + filename
 
     pre_processed[0, :, :] = tifffile.imread(pathname).astype(float)
-    pre_processed[np.where(np.isnan(pre_processed) == True)] = 0.
-    pre_processed[np.where(np.isinf(pre_processed) == True)] = 0.
+    pre_processed[np.where(np.isnan(pre_processed))] = 0.
+    pre_processed[np.where(np.isinf(pre_processed))] = 0.
     # add crosses between the four detector chips
     # pre_processed = np.vstack((np.hstack(
     #     (pre_processed[0, 0:256, 0:256], np.zeros((256, 4)), pre_processed[0, 0:256, 256:512])), np.zeros((5, 516)),
@@ -186,18 +186,20 @@ def write_mat_params(intensities, gvectors, material, lattice_params, spacegroup
     latticeParameters = "{ %s, %s, %s, %s, %s, %s }" % (a * 1e9, b * 1e9, c * 1e9, ang1, ang2, ang3)
     while i <= 12:
         for s in lines:
-            if s.startswith("$filetype") or s.startswith(
-                    "// parameters defining the crystal structure") or s.startswith("$latticeAlphaT") or s.startswith(
-                "$lengthUnit") or s.startswith(
-                "// the following table contains xyz compotnents of G^ and the integral of the peak"):
+            if s.startswith("$filetype") \
+                    or s.startswith("// parameters defining the crystal structure") \
+                    or s.startswith("$latticeAlphaT") \
+                    or s.startswith("$lengthUnit") \
+                    or s.startswith("// the following table contains xyz compotnents of G^ and the integral of"
+                                    "the peak"):
                 peak_file.write(s)
             if s.startswith("$structureDesc"):
                 peak_file.write("$structureDesc		%s\n" % materials)
             if s.startswith("$latticeParameters"):
                 peak_file.write("$latticeParameters	%s	// 2006, CODATA\n" % latticeParameters)
             if s.startswith("$SpaceGroup"):
-                peak_file.write(
-                    "$SpaceGroup			%s					// Space Group number from International\n" % space_group)
+                peak_file.write("$SpaceGroup			%s					// Space Group number from International\n"
+                                % space_group)
             if s.startswith("$N_Ghat+Intens"):
                 peak_file.write("$N_Ghat+Intens 	%s		// number of G^ vectors\n" % len(intensities))
             i += 1

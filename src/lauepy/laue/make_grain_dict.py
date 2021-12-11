@@ -1,17 +1,18 @@
-from write_specorient import write_orient as wo
 import json
-import numpy as np
 import os
-import overlay_peaks as op
 import shutil
 from shutil import copyfile
-from disorientation import calc_disorient, rmat_2_quat
+
+import numpy as np
+
+import src.lauepy.laue.overlay_peaks as op
+from src.lauepy.laue.disorientation import calc_disorient, rmat_2_quat
+from src.lauepy.laue.write_specorient import write_orient as wo
 
 
 def make_grain_dict(output_directory, pattern_dict_file='pattern_dict.json', grain_dict_file='grain_dict.json',
                     cryst_path='crystal_params.json', mis_tol=0.5, plot=True, threshold=1e4,
                     det_params='det_params.json', frame_stepsize=1):
-    grains = {}
     with open(pattern_dict_file) as f:
         pattern_dict = json.load(f)
     with open(grain_dict_file) as f:
