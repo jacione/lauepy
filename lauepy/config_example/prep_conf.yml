@@ -1,7 +1,7 @@
 # Title and directories
 working_id: scan_0147
 working_dir: /home/beams/CXDUSER/34idc-work/2021/LauePUP1221/Analysis/auto_Laue
-data_dir: /home/beams/CXDUSER/34idc-data/2021/LauePUP1221/AD34idcLaue_LauePUP1221/LauePUP1221a_S0147
+data_dir: /home/beams/CXDUSER/34idc-data/2021/LauePUP1221/AD34idcLaue_LauePUP1221a/LauePUP1221a_S0147
 
 # cleanup parameters
 show_plots: False
