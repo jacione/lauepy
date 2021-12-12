@@ -11,7 +11,7 @@ def overlay(outpath, pattern, grain, threshold=300, reduction='reduction.yml', i
             frame_step=1):
     ### patter ####
     with open(reduction, 'r') as yml_file:
-        x = yaml.load(yml_file)
+        x = yaml.safe_load(yml_file)
     print(grain)
     data_path = x['dataDirectory']
     img_path = x['identifier']
@@ -27,7 +27,7 @@ def overlay(outpath, pattern, grain, threshold=300, reduction='reduction.yml', i
     xys = patt['xys']
 
     with open(isolation, 'r') as yml_file:
-        y = yaml.load(yml_file)
+        y = yaml.safe_load(yml_file)
     ind = frame - 1 // frame_step  # list(np.unique([pattern_dict[pat]['Center_Frame'] for pat in pattern_dict])).index(frame)
     start_frame = y['frames'][0]
     xs, ys = zip(*xys)

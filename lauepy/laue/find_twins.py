@@ -52,7 +52,7 @@ def find_twins(in_dict, in_inds, out_file, deg=0, ax_tol=0.1):
         for e in es:
             file.write('\n%s %s %s %s %s %s' % tuple(e))
 
-    angle_calculator = Path(__file__).resolve().parents[1] / 'utils/a.out'
+    angle_calculator = Path(__file__).resolve().parents[1] / 'a.out'
     sub.run([f'{angle_calculator}', '0', '1', '1', '0', 'angle_list.txt'])
     data = np.loadtxt('min-misor-angles.txt', skiprows=1)
     if len(list(data.shape)) == 1:

@@ -1,79 +1,18 @@
 import copy
 from collections import Counter
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.ndimage as ndi
 import tifffile
-import yaml
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from skimage import restoration
 
-from lauepy.hexomap import IntBin
 
-
-def reduce_img(input_yml, threshold):
-    """ This function takes config yml.file and subtract background noise and bright areas.
-
-    inputs:
-            input_yml: file concludes input image path,bkg path,output path
-            threshold: threshold values to subtract noise
-
+def remove_bkg(config):
     """
-    with open(input_yml, 'r') as yml_file:
-        x = yaml.load(yml_file)
-
-    NRot = x['NRot']
-    digitLength = x['digitLength']
-    extension = x['extension']
-    identifier = x['identifier']
-    idxLayer = x['idxLayer']
-
-    dataDirectory = x['dataDirectory']
-    initial = dataDirectory + identifier + '/' + identifier + '_'
-    outputDirectory = identifier + '_reduced'
-    startIdx = x['startIdx']
-
-    bkg_path = f'{dataDirectory}{outputDirectory}/{identifier}_bkg_z{idxLayer[0]}_det_0.tiff'
-    # ../data/Staff21-1h_S0032_250_3/Staff21-1h_S0032_bkg_z0_det_0.tiff
-
-    for idx in range(startIdx, NRot):
-        fName = f'{initial}{str(idx).zfill(digitLength)}{extension}'
-        tiff = tifffile.imread(fName)
-        bkg = tifffile.imread(bkg_path)  # background#
-        bright_bkg = bkg > threshold * np.median(bkg.ravel())
-        bright_bkg = ndi.binary_dilation(bright_bkg, iterations=2)
-        sub = tiff - bkg  # subtract bkg
-        sub[bright_bkg] = 0  # set bright bkg area to 0
-        sub[sub < 0] = 0  # you have to change the value
-        #         sub[sub<threshold] = 0
-        tifffile.imsave(dataDirectory + outputDirectory + '/' + outputDirectory + '_%05d%s' % (idx, extension), sub)
-
-
-def reduce_img_laplacian(input_yml, threshold):
-    with open(input_yml, 'r') as yml_file:
-        x = yaml.load(yml_file)
-
-    NRot = x['NRot']
-    extension = x['extension']
-    identifier = x['identifier']
-
-    dataDirectory = x['dataDirectory']
-    outputDirectory = identifier + '_reduced'
-    startIdx = x['startIdx']
-
-    # ../data/Staff21-1h_S0032_250_3/Staff21-1h_S0032_bkg_z0_det_0.tiff
-
-    for idx in range(startIdx, NRot):
-        bin_path = f'{dataDirectory}{outputDirectory}/{identifier}_binz0_{idx:05d}.bin0'
-        img = IntBin.ReadI9BinaryFiles(bin_path)
-
-        tifffile.imsave(dataDirectory + outputDirectory + '/' + outputDirectory + '_%05d%s' % (idx, extension), img)
-
-
-def rb_background(input_yml, r=1):
-    """
-    if the median background has the issue of uneven features, we can adopt the rb_background method to remove uneven
+    if the median background has the issue of uneven features, we can adopt the remove_bkg method to remove uneven
     pattern. The rolling-ball algorithm estimates the background intensity of a grayscale image in case of uneven
     exposure.
 
@@ -82,67 +21,26 @@ def rb_background(input_yml, r=1):
 
     r = radius for the rolling ball method
     """
-    with open(input_yml, 'r') as yml_file:
-        x = yaml.load(yml_file)
 
-    NDet = x['NDet']
-    NLayer = x['NLayer']
-    NRot = x['NRot']
-    baseline = x['baseline']
-    digitLength = x['digitLength']
-    extension = x['extension']
-    identifier = x['identifier']
-    idxLayer = x['idxLayer']
+    data_dir = config['data_dir']
+    working_dir = config['working_dir']
+    working_id = config['working_id']
+    show_plots = config['show_plots']
+    output_dir = f'{working_dir}/{working_id}'
 
-    dataDirectory = x['dataDirectory']
-    initial = dataDirectory + identifier + '/' + identifier + '_'
-    outputDirectory = identifier + '_reduced'
-    startIdx = x['startIdx']
+    rb_radius = config['rolling_ball_radius']
+    g_sigma = config['gaussian_sigma']
 
-    median_bkg = np.int32(
-        tifffile.imread(f'{dataDirectory}{outputDirectory}/{identifier}_bkg_z{idxLayer[0]}_det_0.tiff'))
+    files = sorted(Path(data_dir).iterdir())
+    img_stack = np.array(tifffile.imread(f) for f in files)
 
-    # rewrite bright bkg
-    # fig = plt.figure(figsize=(40,40))
-    # plt.title('original median background',fontsize = 12)
-    # plt.imshow(median_bkg, vmin=0, vmax=100)
+    # The median of all frames removes short-lived features (such as Laue peaks!)
+    rb_img = np.median(img_stack, axis=0)
+    rb_img = remove_badpixel(rb_img)
 
-    remove_bad_pixel_bkg = remove_badpixel(median_bkg)
-    # fig = plt.figure(figsize=(40,40))
-    # plt.title('remove_bad_pixel_bkg',fontsize = 12)
-    # plt.imshow(remove_bad_pixel_bkg, vmin=0, vmax=100)
-
-    # # # add rolling ball remove uneven pattern.
-    rolling_ball_bkg = restoration.rolling_ball(remove_bad_pixel_bkg,
-                                                radius=r)  # @##################### need to resolve
-    # rolling_ball_bkg = median_filter(remove_bad_pixel_bkg,size=40) #@##################### need to resolve\
-    #     fig = plt.figure(figsize=(40,40))
-    #     plt.title('rolling_ball_result',fontsize = 12)
-    #     plt.imshow(rolling_ball_bkg, vmin=0, vmax=100)
-
-    #     bad_pixel, bkg = find_outlier_pixels(rolling_ball_bkg,tolerance=10,worry_about_edges=True)
-    #     fig = plt.figure(figsize=(40,40))
-    #     plt.title('median filtered background',fontsize = 12)
-    #     plt.imshow(bkg,vmin=0, vmax=100)
-
-    new_bkg = remove_bad_pixel_bkg - rolling_ball_bkg  # this is the new generated median background
-    new_bkg = remove_badpixel(new_bkg)
-    # fig = plt.figure(figsize=(40,40))
-    # plt.title('median - rolling_ball_result',fontsize = 12)
-    # plt.imshow(new_bkg, vmin=0, vmax=100)
-
-    ### extract the bright peaks from the rolling ball median background ###
-    # bright_bkg = new_bkg > threshold*np.median(new_bkg.ravel())
-    # bright_bkg = ndi.binary_dilation(bright_bkg,iterations=6)
-    # fig = plt.figure(figsize=(40,40))
-    # plt.title('bright peaks',fontsize = 12)
-    # plt.imshow(bright_bkg)
-    # print('name:' + dataDirectory+outputDirectory+'/'+outputDirectory+'_bkg_rb')
-    tifffile.imsave(dataDirectory + outputDirectory + '/' + outputDirectory + '_bkg_rb', new_bkg)
-    #     substrate_peaks = get_peaklist(image = new_bkg,threshold_max=10e3, threshold = 3)
-    #     simulate_substrate = simulate_substrate(sub_peak = substrate_peaks)
-
-    # # plt.savefig('/Users/yuehengzhang/Desktop/CMU/LauePUP921/LauePUP921-work/Analysis/Transfer_to_Sayre/Working_Directories/S0395_test/bright_bkg')
+    # Rolling ball filter removes large-scale features (such as vignette)
+    rb_img = rb_img - restoration.rolling_ball(rb_img, radius=rb_radius)
+    tifffile.imsave(f'{output_dir}/substrate_peaks_only.tiff', rb_img)
 
     # # find the abnormal images:
     # select abnormal frames:
@@ -150,41 +48,43 @@ def rb_background(input_yml, r=1):
     lV = []
     lV_max = []
     abnormal_idx = []
-    for idxTmp in range(startIdx, startIdx + NRot):
-        # print(f'{idxTmp} image')
-        fName = f'{initial}{str(idxTmp).zfill(digitLength)}{extension}'
-        raw = np.int32(tifffile.imread(fName))
-        # fig = plt.figure(figsize=(40,40))
-        # plt.title('raw image',fontsize = 12)
-        # plt.imshow(raw,vmax = 500)
-        corrected_raw = remove_badpixel(raw)
-        mf_bkg = ndi.median_filter(corrected_raw, size=50)
-        sub = corrected_raw - mf_bkg
-        # fig = plt.figure(figsize=(40,40))
-        # plt.title('sub image after subtracting median_bkg',fontsize = 12)
-        # plt.imshow(sub,vmin=0, vmax = 500)      
-        # sub[bright_bkg] = 0 # set bright bkg area to 0
-        # sub[sub<0] = 0 
-        # fig = plt.figure(figsize=(40,40))
-        # plt.title('sub image after subtracting the bright_bkg',fontsize = 12)
-        # plt.imshow(sub,vmin = 0, vmax = 100)
-        median_value_of_sub = np.median(sub)
-        max_value_of_sub = np.max(sub)
+
+    for i, img in enumerate(img_stack):
+        # Remove bad pixels
+        img = remove_badpixel(img)
+
+        # Normalize the intensity of each image
+        img = img / np.median(img) * 1000
+
+        # Subtract the very broad features
+        img = img - ndi.gaussian_filter(img, g_sigma)
+
+        # Remove negative values
+        img[img < 0] = 0
+
+        # Remove speckle noise
+        img = ndi.median_filter(img, size=2)
+
+        median_value_of_sub = np.median(img)
+        max_value_of_sub = np.max(img)
         if median_value_of_sub > 30:
-            abnormal_idx.append(idxTmp)
+            abnormal_idx.append(i)
         lV.append(median_value_of_sub)
         lV_max.append(max_value_of_sub)
-        tifffile.imsave(dataDirectory + outputDirectory + '/' + outputDirectory + '_%05d%s' % (idxTmp, extension), sub)
-    plt.figure(figsize=(40, 40))
-    plt.plot(lV)
-    plt.show()
-    plt.title('median value of subtracted images, abnormal frames have high value')
-    plt.imshow(sub, vmin=0, vmax=300)
-    print('conclusion: only a small portion have abnormal background')
-    lV = np.array(lV)
-    t = 30
-    print(f'# of unvalid frames: {np.sum(lV > t)}, # of remaining frames : {np.sum(lV < t)}')
-    print(" the abnormal frames are", abnormal_idx)
+        tifffile.imsave(f'{output_dir}/background_removed/img_{i:05}.tiff', img)
+
+    if show_plots:
+        plt.figure()
+        plt.plot(lV)
+        plt.show()
+        plt.title('median value of subtracted images, abnormal frames have high value')
+        plt.imshow(img, vmin=0, vmax=300)
+
+        print('conclusion: only a small portion have abnormal background')
+        lV = np.array(lV)
+        t = 30
+        print(f'# of unvalid frames: {np.sum(lV > t)}, # of remaining frames : {np.sum(lV < t)}')
+        print(" the abnormal frames are", abnormal_idx)
     # print("idx", idx)
 
 
@@ -430,3 +330,5 @@ def get_peaklist(image, threshold_max=1000, threshold=3, minimal_pixel=5):
     #     json.dump(peak_dict, json_file)    
     # tfile.imsave(seg_img_path,np.int32(data)) 
     return peak_dict
+
+
