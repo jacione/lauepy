@@ -1,3 +1,6 @@
+"""
+Image cleanup to prepare for the Laue analysis
+"""
 import copy
 from collections import Counter
 from pathlib import Path
@@ -10,28 +13,19 @@ from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from skimage import restoration
 
 
-def remove_bkg(config):
+def extract_substrate(config):
     """
-    if the median background has the issue of uneven features, we can adopt the remove_bkg method to remove uneven
-    pattern. The rolling-ball algorithm estimates the background intensity of a grayscale image in case of uneven
-    exposure.
+    Takes a stack of Laue diffraction images and extracts only the stationary peaks. If the median background has
+    the issue of uneven features, we can adopt the cleanup_images method to remove uneven pattern. The rolling-ball
+    algorithm estimates the background intensity of a grayscale image in case of uneven exposure.
 
-    input:
-    input_yml: the file concludes input image path,bkg path,output path
 
-    r = radius for the rolling ball method
+    :param config:
+    :type config:
+    :return:
+    :rtype:
     """
-
-    data_dir = config['data_dir']
-    working_dir = config['working_dir']
-    working_id = config['working_id']
-    show_plots = config['show_plots']
-    output_dir = f'{working_dir}/{working_id}'
-
-    rb_radius = config['rolling_ball_radius']
-    g_sigma = config['gaussian_sigma']
-
-    files = sorted(Path(data_dir).iterdir())
+    files = sorted(Path(config['data_dir']).iterdir())
     img_stack = np.array(tifffile.imread(f) for f in files)
 
     # The median of all frames removes short-lived features (such as Laue peaks!)
@@ -39,8 +33,25 @@ def remove_bkg(config):
     rb_img = remove_badpixel(rb_img)
 
     # Rolling ball filter removes large-scale features (such as vignette)
-    rb_img = rb_img - restoration.rolling_ball(rb_img, radius=rb_radius)
-    tifffile.imsave(f'{output_dir}/substrate_peaks_only.tiff', rb_img)
+    rb_img = rb_img - restoration.rolling_ball(rb_img, radius=config['rolling_ball_radius'])
+    tifffile.imsave(f"{config['working_dir']}/{config['working_id']}/substrate_peaks.tiff", rb_img)
+
+    return
+
+
+def cleanup_images(config):
+    """
+    Takes the image stack and cleans them up so that the Laue peaks are easier to see.
+
+    :param config:
+    :type config:
+    :return:
+    :rtype:
+    """
+    output_dir = f"{config['working_dir']}/{config['working_dir']}"
+
+    files = sorted(Path(config['data_dir']).iterdir())
+    img_stack = np.array(tifffile.imread(f) for f in files)
 
     # # find the abnormal images:
     # select abnormal frames:
@@ -57,7 +68,7 @@ def remove_bkg(config):
         img = img / np.median(img) * 1000
 
         # Subtract the very broad features
-        img = img - ndi.gaussian_filter(img, g_sigma)
+        img = img - ndi.gaussian_filter(img, config['gaussian_sigma'])
 
         # Remove negative values
         img[img < 0] = 0
@@ -71,9 +82,9 @@ def remove_bkg(config):
             abnormal_idx.append(i)
         lV.append(median_value_of_sub)
         lV_max.append(max_value_of_sub)
-        tifffile.imsave(f'{output_dir}/background_removed/img_{i:05}.tiff', img)
+        tifffile.imsave(f'{output_dir}/clean_images/img_{i:05}.tiff', img)
 
-    if show_plots:
+    if config['show_plots']:
         plt.figure()
         plt.plot(lV)
         plt.show()
@@ -85,7 +96,7 @@ def remove_bkg(config):
         t = 30
         print(f'# of unvalid frames: {np.sum(lV > t)}, # of remaining frames : {np.sum(lV < t)}')
         print(" the abnormal frames are", abnormal_idx)
-    # print("idx", idx)
+    return
 
 
 def find_outlier_pixels(data, tolerance=10e7, worry_about_edges=True):

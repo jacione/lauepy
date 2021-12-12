@@ -1,5 +1,5 @@
 import click
-from lauepy.laue.background_subtraction import remove_bkg
+import lauepy.laue.image_prep as prep
 import lauepy.laue.utils as ut
 
 
@@ -7,7 +7,8 @@ import lauepy.laue.utils as ut
 @click.argument('config')
 def main(config):
     config = ut.read_config(config)
-    remove_bkg(config)
+    prep.extract_substrate(config)
+    prep.cleanup_images(config)
 
 
 if __name__ == '__main__':
