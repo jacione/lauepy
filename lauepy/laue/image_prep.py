@@ -8,9 +8,11 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.ndimage as ndi
+import scipy.signal as sig
 import tifffile
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from skimage import restoration
+from progressbar import progressbar as pbar
 
 
 def extract_substrate(config):
@@ -25,8 +27,9 @@ def extract_substrate(config):
     :return:
     :rtype:
     """
+    print('Extracting substrate-only image...')
     files = sorted(Path(config['data_dir']).iterdir())
-    img_stack = np.array(tifffile.imread(f) for f in files)
+    img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
 
     # The median of all frames removes short-lived features (such as Laue peaks!)
     rb_img = np.median(img_stack, axis=0)
@@ -34,7 +37,8 @@ def extract_substrate(config):
 
     # Rolling ball filter removes large-scale features (such as vignette)
     rb_img = rb_img - restoration.rolling_ball(rb_img, radius=config['rolling_ball_radius'])
-    tifffile.imsave(f"{config['working_dir']}/{config['working_id']}/substrate_peaks.tiff", rb_img)
+    
+    tifffile.imsave(f"{config['working_dir']}/{config['working_id']}/substrate_peaks.tiff", np.array(rb_img, dtype='i'))
 
     return
 
@@ -48,10 +52,13 @@ def cleanup_images(config):
     :return:
     :rtype:
     """
-    output_dir = f"{config['working_dir']}/{config['working_dir']}"
+    print('Cleaning up Laue images...')
+    output_dir = f"{config['working_dir']}/{config['working_id']}/clean_images"
+    if not Path(output_dir).exists():
+        Path(output_dir).mkdir(parents=True)
 
     files = sorted(Path(config['data_dir']).iterdir())
-    img_stack = np.array(tifffile.imread(f) for f in files)
+    img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
 
     # # find the abnormal images:
     # select abnormal frames:
@@ -60,21 +67,22 @@ def cleanup_images(config):
     lV_max = []
     abnormal_idx = []
 
-    for i, img in enumerate(img_stack):
+    for i, img in pbar(enumerate(img_stack)):
         # Remove bad pixels
         img = remove_badpixel(img)
 
         # Normalize the intensity of each image
-        img = img / np.median(img) * 1000
+        img = np.clip(img, 0, np.quantile(img, 0.999))
+        img = (img - np.quantile(img, 0.85)) / np.mean(img) * 1000
 
         # Subtract the very broad features
-        img = img - ndi.gaussian_filter(img, config['gaussian_sigma'])
+        img = ndi.gaussian_filter(img, 0.5) - ndi.gaussian_filter(img, config['gaussian_sigma'])
 
         # Remove negative values
         img[img < 0] = 0
 
-        # Remove speckle noise
-        img = ndi.median_filter(img, size=2)
+#        # Remove speckle noise
+#        img = ndi.gaussian_filter(img, 1)
 
         median_value_of_sub = np.median(img)
         max_value_of_sub = np.max(img)
@@ -82,7 +90,7 @@ def cleanup_images(config):
             abnormal_idx.append(i)
         lV.append(median_value_of_sub)
         lV_max.append(max_value_of_sub)
-        tifffile.imsave(f'{output_dir}/clean_images/img_{i:05}.tiff', img)
+        tifffile.imsave(f'{output_dir}/img_{i:05}.tiff', np.array(img, dtype='i'))
 
     if config['show_plots']:
         plt.figure()
@@ -195,67 +203,48 @@ def remove_badpixel(data):
     hot_pixel = np.where(data > 10e7)
     bad_pixel = (np.concatenate((dead_pixel[0], hot_pixel[0])), np.concatenate((dead_pixel[1], hot_pixel[1])))
 
-    # bad_pixel =
-    # print(bad_pixel)
-    # print(bad_pixel[0])
     height, width = np.shape(data)
-    # fig = plt.figure(figsize=(40,40))
-    # plt.title('original median background',fontsize = 12)
-    # plt.imshow(median_bkg, vmin=0, vmax=100)
-    # print(median_bkg.shape)
     for idx in range(len(bad_pixel[0])):
         y = bad_pixel[0][idx]
         x = bad_pixel[1][idx]
-        # print(y,x)
-        if 5 < x < width - 5 and 5 < y < height - 5:
+        if (5 < x < width - 5) and (5 < y < height - 5):
             # deal with no-edge bad pixels
-            # median = np.median(median_bkg[x - 5: x + 5, y - 5: y + 5])
             median = np.median(data[y - 5: y + 5, x - 5: x + 5].ravel())
 
+        # Now get the pixels on the edges (but not the corners)
+        elif x < 5 < y < height - 5:
+            median = np.median(data[y - 5: y + 5, x: x + 5].ravel())
+
+        # right sides
+        elif x > width - 5 and 5 < y < height - 5:
+            median = np.median(data[y - 5: y + 5, x - 5:x].ravel())
+
+        # top sides
+        elif width - 5 > x > 5 > y:
+            median = np.median(data[y: y + 5, x - 5: x + 5].ravel())
+
+        # bottom sides
+        elif 5 < x < width - 5 and y > height - 5:
+            median = np.median(data[y - 5: y, x - 5: x + 5].ravel())
+
+        # Now get the pixels on the corners
+        # top left corner
+        elif x < 5 and y < 5:
+            median = np.median(data[y: y + 5, x: x + 5].ravel())
+
+        # top right corner
+        elif x > width - 5 and y < 5:
+            median = np.median(data[y: y + 5, x - 5: x].ravel())
+
+        # bottom left corner
+        elif x < 5 and y > height - 5:
+            median = np.median(data[y - 5: y, x: x + 5].ravel())
+
+        # bottom right corner
+        elif x > width - 5 and y > height - 5:
+            median = np.median(data[y - 5: y, x - 5: x].ravel())
         else:
-            # Now get the pixels on the edges (but not the corners)
-            # left sides
-            if x < 5 < y < height - 5:
-                # median = np.median(median_bkg[x: x + 5, y - 5: y + 5])
-                median = np.median(data[y - 5: y + 5, x: x + 5].ravel())
-
-            # right sides
-            if x > width - 5 and 5 < y < height - 5:
-                # median = np.median(median_bkg[x - 5: x, y - 5: y + 5])
-                median = np.median(data[y - 5: y + 5, x - 5:x].ravel())
-
-            # top sides
-            if width - 5 > x > 5 > y:
-                # median = np.median(median_bkg[x - 5: x + 5, y: y + 5])
-                median = np.median(data[y: y + 5, x - 5: x + 5].ravel())
-
-            # bottom sides
-            if 5 < x < width - 5 and y > height - 5:
-                # median = np.median(median_bkg[x - 5: x + 5, y - 5: y])
-                median = np.median(data[y - 5: y, x - 5: x + 5].ravel())
-
-            # Now get the pixels on the corners
-            # top left corner 
-            if x < 5 and y < 5:
-                # median = np.median(median_bkg[x: x + 5, y: y + 5])
-                median = np.median(data[y: y + 5, x: x + 5].ravel())
-
-            # top right corner
-            if x > width - 5 and y < 5:
-                # median = np.median(median_bkg[x - 5: x, y: y + 5])
-                median = np.median(data[y: y + 5, x - 5: x].ravel())
-
-            # bottom left corner
-            if x < 5 and y > height - 5:
-                # median = np.median(median_bkg[x: x + 5, y - 5: y])
-                median = np.median(data[y - 5: y, x: x + 5].ravel())
-
-            # bottom right corner
-            if x > width - 5 and y > height - 5:
-                # median = np.median(median_bkg[x - 5: x, y - 5: y])
-                median = np.median(data[y - 5: y, x - 5: x].ravel())
-            else:
-                raise ValueError('median was not defined')
+            raise ValueError(f'median was not defined for point (x={x}, y={y})')
 
         # print("median", median)
         if np.isnan(corrected[y, x]):
