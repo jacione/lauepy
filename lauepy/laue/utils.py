@@ -10,3 +10,18 @@ def read_config(yml_file):
     if not id_dir.exists():
         id_dir.mkdir(parents=True)
     return config
+
+
+def purge(config):
+    """
+    Cleans out the working directory
+    """
+    id_dir = Path(f"{config['working_dir']}/{config['working_id']}")
+    if id_dir.exists():
+        shutil.rmtree(id_dir)
+        id_dir.mkdir()
+    return
+
+
+if __name__ == '__main__':
+    pass
