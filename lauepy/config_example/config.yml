@@ -1,0 +1,20 @@
+# Title and directories
+working_id: scan_0097
+working_dir: /home/beams/CXDUSER/34idc-work/2021/LauePUP1221/Analysis/lauepy_output
+data_dir: /home/beams/CXDUSER/34idc-data/2021/LauePUP1221/AD34idcLaue_LauePUP1221a/LauePUP1221a_S0097
+spec_file: /home/beams/CXDUSER/34idc-data/2021/LANLPUP421/LANLPUP421a.spec
+
+# General parameters
+show_plots: false
+verbose: false
+
+# Image prep parameters (all start with "prep_")
+prep_rolling_ball_radius: 50
+prep_zero_fraction: 0.85
+prep_coefficient: 1000
+prep_gaussian_sigma: 50
+
+# Peak-indexing parameters (all start with "pkid_")
+pkid_cutoff: 100000
+
+# Laue analysis parameters (all start with "laue_")
