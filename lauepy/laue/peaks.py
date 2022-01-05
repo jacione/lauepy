@@ -4,6 +4,7 @@ import json
 import re
 import time
 from collections import Counter
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,115 +19,7 @@ from lauepy.rxlibs.xmd34 import geometry as geo
 from lauepy.rxlibs.xmd34 import lattice as latt
 
 
-def isolate_peaks_test_median(input_yml):
-    """
-    # this is used to test median instead of mean
-    This function takes a numpy array of data and finds the center of mass of all peaks,
-     thresholding by a minimum peak width in pixels
-
-    inputs:
-            data_path: path to reduced data
-            weight_path: path to weights
-
-    outputs:
-            center_xy: list of the xy values of the centers of mass for all peaks
-            center_z: list of the z values (frames) of the centers of mass of each peak
-            z_len: the length in z that a peak exists (i.e. number of frames)
-
-    """
-
-    with open(input_yml, 'r') as yml_file:
-        x = json.load(yml_file)
-    peak_dict_path = x['peak_dict_path']
-    seg_img_path = x['seg_img_path']
-    verbose = x['verbose']
-    plot = x['plot']
-    frames = x['frames']
-    threshold = x['threshold']
-    data_path = x['data_path']
-    dir_path = x['dir_path']
-    threshold_max = x['threshold_max']
-    min_pix = x['min_pix']
-    start = time.perf_counter()
-
-    data = []
-    center_frames = []
-    for i in range(frames[0], frames[1], frames[2]):
-        center_frames.append(i)
-
-        raw_img = tfile.imread(data_path + dir_path + '/' + dir_path + '_%05d.tif' % i).astype(float)
-
-        # segment data
-
-        seg_img = copy.copy(raw_img)
-        seg_img[seg_img > threshold_max] = 0
-
-        avg = np.median(seg_img)  # mean -- median ####
-        sigma = np.std(seg_img)
-        seg_img[seg_img < avg + threshold * sigma] = 0
-
-        # seg_img[seg_img<threshold] = 0
-        # read in segmented data
-
-        data.append(seg_img)
-    data = np.array(data)
-    # data = np.moveaxis(np.array(data),0,-1)
-
-    gc.collect()
-    peak = 1
-    peak_dict = {}
-
-    for z, center_frame in enumerate(center_frames):
-
-        frame = data[z, :, :]
-        labels, num_feature = label(frame)  # find all clusters that could be peaks
-        c = Counter(list(labels.ravel())).items()
-        c = [cc[0] for cc in c if cc[1] > min_pix]
-
-        mask = np.isin(labels, c)
-        labels[~mask] = 0
-        data[z][~mask] = 0
-        frame[~mask] = 0
-        num_feature = len(c) - 1
-
-        locations = find_objects(labels)  # find the slices where these peaks exist
-
-        # c = np.arange(0,num_feature+1)
-
-        lPos = center_of_mass(frame, labels=labels, index=c[1:])
-
-        # lPos = [(pos[1],pos[0]) for pos in lPos]
-        lpos_cor = []
-        for i, pos in enumerate(lPos):
-            peak_x = pos[1]
-            peak_y = pos[0]
-            # if (peak_x)>256:
-            #     peak_x += 4
-            # if (peak_y)>256:
-            #     peak_y += 5
-
-            lpos_cor.append((peak_x, peak_y))
-
-        # lPos = np.array(lPos).reshape([-1,2])
-        lPos = np.array(lpos_cor).reshape([-1, 2])
-
-        for center in lPos:
-            peak_dict['peak_%s' % peak] = {'XY': list(center), 'Center_Frame': center_frame}
-            peak += 1
-
-    end = time.perf_counter()
-    if verbose:
-        print('Features:', num_feature)
-        print('Number of Peaks:', len(list(peak_dict)))
-        print('time to calculate:', end - start, 's')
-
-    with open(peak_dict_path, 'w') as json_file:
-        json.dump(peak_dict, json_file)
-    tfile.imsave(seg_img_path, np.int32(data))
-    return
-
-
-def isolate_substratepeaks(substrate_yml):
+def isolate_substrate_peaks(config):
     """ This function takes a numpy array of data and finds the center of mass of all peaks,
      thresholding by a minimum peak width in pixels
 
@@ -140,44 +33,30 @@ def isolate_substratepeaks(substrate_yml):
             z_len: the length in z that a peak exists (i.e. number of frames)
 
     """
-
-    with open(substrate_yml, 'r') as yml_file:
-        x = json.load(yml_file)
-
-    peak_dict_path = x['peak_dict_path']
-    seg_img_path = x['seg_img_path']
-    verbose = x['verbose']
-    plot = x['plot']
-    frames = x['frames']
-    threshold = x['threshold']
-    data_path = x['image_path']
-    # dir_path = x['dir_path']
-    identifier = x['identifier']
-    threshold_max = x['threshold_max']
-    min_pix = x['min_pix']
-    max_pix = x['max_pix']
+    output_dir = f"{config['working_dir']}/{config['working_id']}"
+    threshold = config['threshold']
+    cutoff = config['pkid_cutoff']
+    min_pix = config['min_pix']
+    max_pix = config['max_pix']
     start = time.perf_counter()
 
     data = []
-    center_frames = []
-    for i in range(frames[0], frames[1], frames[2]):
-        center_frames.append(i)
+    center_frames = []  # Needs to be defined for compatibility with other scripts
 
-        # raw_img = tfile.imread(data_path+dir_path+'/'+dir_path+'_%05d.tif'%i).astype(float)
-        raw_img = np.int32(tfile.imread(data_path + '/' + identifier + '_reduced_bkg_rb'))
-        # segment data
+    # raw_img = tfile.imread(data_path+dir_path+'/'+dir_path+'_%05d.tif'%i).astype(float)
+    raw_img = tfile.imread(f'{output_dir}/substrate_peaks.tiff')
+    # segment data
+    seg_img = copy.copy(raw_img)
+    seg_img[seg_img > cutoff] = 0
 
-        seg_img = copy.copy(raw_img)
-        seg_img[seg_img > threshold_max] = 0
+    avg = np.median(seg_img)
+    sigma = np.std(seg_img)
+    seg_img[seg_img < avg + threshold * sigma] = 0
 
-        avg = np.median(seg_img)
-        sigma = np.std(seg_img)
-        seg_img[seg_img < avg + threshold * sigma] = 0
+    # seg_img[seg_img<threshold] = 0
+    # read in segmented data
 
-        # seg_img[seg_img<threshold] = 0
-        # read in segmented data
-
-        data.append(seg_img)
+    data.append(seg_img)
     data = np.array(data)
     #     data = np.moveaxis(np.array(data),0,-1)
 
@@ -236,15 +115,15 @@ def isolate_substratepeaks(substrate_yml):
         FullPeakList['x0'].append(peak[0])
         FullPeakList['y0'].append(peak[1])
 
-    if verbose:
+    if config['verbose']:
         print('Features:', num_feature)
         print('Number of Peaks:', len(list(substrate_peak_dict)))
         print('time to calculate:', end - start, 's')
-    with open(peak_dict_path, 'w') as json_file:
+    with open(f'{output_dir}/substrate_peaks.json', 'w') as json_file:
         json.dump(substrate_peak_dict, json_file)
-    tfile.imsave(seg_img_path, np.int32(data))
+    tfile.imsave(f'{output_dir}/segmented_data.tiff', np.int32(data))
 
-    if plot:
+    if config['show_plots']:
         fig = plt.figure(figsize=(10, 10), dpi=50)
         ax = fig.add_subplot(111)
         ax.imshow(raw_img[:, :], vmax=100)
@@ -513,7 +392,7 @@ def group_peaks(input_yml, min_peaks=3, max_peaks=250):
     return
 
 
-def group_substrate_peaks(input_yml, min_peaks=3, max_peaks=250, plot=True):
+def group_substrate_peaks(config, min_peaks=3, max_peaks=250):
     """ 
     This function groups peaks by the z values of their centers of mass. Peaks that 
     are centered on the same frame will be in roughly the same location. After this,
@@ -529,15 +408,11 @@ def group_substrate_peaks(input_yml, min_peaks=3, max_peaks=250, plot=True):
             df: pandas dataframe of the groups
             XYS: List of xys for each group
     """
-    with open(input_yml, 'r') as yml_file:
-        x = json.load(yml_file)
-    scan = x['scan']
-    peak_dict_path = x['peak_dict_path']
-    group_dict_path = x['group_dict_path']
-    spec_file = x['spec_file']
-    plot = x['plot']
+    output_dir = f"{config['working_dir']}/{config['working_id']}"
+    scan = config['scan']
+    spec_file = config['spec_file']
 
-    with open(peak_dict_path) as f:
+    with open(f"{output_dir}/substrate_peaks.json") as f:
         peak_dict = json.load(f)
     center_z = [peak_dict[pk]['Center_Frame'] for pk in peak_dict]
     group_dict = {}
@@ -570,14 +445,14 @@ def group_substrate_peaks(input_yml, min_peaks=3, max_peaks=250, plot=True):
         group_dict['group_%s' % (i + 1)] = {'Center_Frame': zs[i], 'ID_List': IDS[i], 'phichitheta': spec_vals[i][1],
                                             'Pos': spec_vals[i][0]}
     print('Number of Groups:', len([grp for grp in group_dict]))
-    if plot:
-        IDS = [len(id) for id in IDS]
+    if config['show_plots']:
+        IDS = [len(i) for i in IDS]
         plt.scatter(zs, IDS)
         plt.ylabel('number of peaks')
         plt.xlabel('frame')
         plt.show()
 
-    with open(group_dict_path, 'w') as json_file:
+    with open(f"{output_dir}/substrate_groups.json", 'w') as json_file:
         json.dump(group_dict, json_file)
     return
 
