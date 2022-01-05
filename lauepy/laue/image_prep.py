@@ -8,7 +8,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.ndimage as ndi
-import scipy.signal as sig
 import tifffile
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from skimage import restoration
@@ -22,10 +21,8 @@ def extract_substrate(config):
     algorithm estimates the background intensity of a grayscale image in case of uneven exposure.
 
 
-    :param config:
-    :type config:
-    :return:
-    :rtype:
+    :param config: configuration parameters
+    :type config: dict
     """
     print('Extracting substrate-only image...')
     files = sorted(Path(config['data_dir']).iterdir())
@@ -36,7 +33,7 @@ def extract_substrate(config):
     rb_img = remove_badpixel(rb_img)
 
     # Rolling ball filter removes large-scale features (such as vignette)
-    rb_img = rb_img - restoration.rolling_ball(rb_img, radius=config['rolling_ball_radius'])
+    rb_img = rb_img - restoration.rolling_ball(rb_img, radius=config['prep_rolling_ball_radius'])
     
     tifffile.imsave(f"{config['working_dir']}/{config['working_id']}/substrate_peaks.tiff", np.array(rb_img, dtype='i'))
 
@@ -47,10 +44,8 @@ def cleanup_images(config):
     """
     Takes the image stack and cleans them up so that the Laue peaks are easier to see.
 
-    :param config:
-    :type config:
-    :return:
-    :rtype:
+    :param config: configuration parameters
+    :type config: dict
     """
     print('Cleaning up Laue images...')
     output_dir = f"{config['working_dir']}/{config['working_id']}/clean_images"
@@ -60,54 +55,36 @@ def cleanup_images(config):
     files = sorted(Path(config['data_dir']).iterdir())
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
 
-    # # find the abnormal images:
-    # select abnormal frames:
-    # check how many frames have abnormal background intensity
-    lV = []
-    lV_max = []
-    abnormal_idx = []
-
     for i, img in pbar(enumerate(img_stack)):
         # Remove bad pixels
         img = remove_badpixel(img)
 
         # Normalize the intensity of each image
         img = np.clip(img, 0, np.quantile(img, 0.999))
-        img = (img - np.quantile(img, 0.85)) / np.mean(img) * 1000
+        img = (img - np.quantile(img, config['prep_zero_fraction'])) / np.mean(img) * config['prep_coefficient']
 
         # Subtract the very broad features
-        img = ndi.gaussian_filter(img, 0.5) - ndi.gaussian_filter(img, config['gaussian_sigma'])
+        img = img - ndi.gaussian_filter(img, config['prep_gaussian_sigma'])
 
         # Remove negative values
         img[img < 0] = 0
 
-#        # Remove speckle noise
-#        img = ndi.gaussian_filter(img, 1)
-
-        median_value_of_sub = np.median(img)
-        max_value_of_sub = np.max(img)
-        if median_value_of_sub > 30:
-            abnormal_idx.append(i)
-        lV.append(median_value_of_sub)
-        lV_max.append(max_value_of_sub)
         tifffile.imsave(f'{output_dir}/img_{i:05}.tiff', np.array(img, dtype='i'))
 
     if config['show_plots']:
-        plt.figure()
-        plt.plot(lV)
-        plt.show()
-        plt.title('median value of subtracted images, abnormal frames have high value')
-        plt.imshow(img, vmin=0, vmax=300)
+        files = sorted(Path(output_dir).iterdir())
+        img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
 
-        print('conclusion: only a small portion have abnormal background')
-        lV = np.array(lV)
-        t = 30
-        print(f'# of unvalid frames: {np.sum(lV > t)}, # of remaining frames : {np.sum(lV < t)}')
-        print(" the abnormal frames are", abnormal_idx)
+        plt.figure()
+        plt.plot(np.median(img_stack, axis=(1, 2)))
+        plt.title('median values of background-subtracted images')
+        plt.show()
+
     return
 
 
 def find_outlier_pixels(data, tolerance=10e7, worry_about_edges=True):
+    # TODO: Unused function - find use or delete
     # This function finds the hot or dead pixels in a 2D dataset.
     # tolerance is the number of standard deviations used to cutoff the hot pixels
     # If you want to ignore the edges and greatly speed up the code, then set
@@ -197,52 +174,57 @@ def find_outlier_pixels(data, tolerance=10e7, worry_about_edges=True):
     return hot_pixels, fixed_image
 
 
-def remove_badpixel(data):
-    corrected = copy.copy(data)
-    dead_pixel = np.where(data < 0)
-    hot_pixel = np.where(data > 10e7)
+def remove_badpixel(img):
+    """
+
+    :param img: Laue image to analyze
+    :type img: ndarray
+    """
+    corrected = copy.copy(img)
+    dead_pixel = np.where(img < 0)
+    hot_pixel = np.where(img > 10e7)
     bad_pixel = (np.concatenate((dead_pixel[0], hot_pixel[0])), np.concatenate((dead_pixel[1], hot_pixel[1])))
 
-    height, width = np.shape(data)
+    height, width = np.shape(img)
     for idx in range(len(bad_pixel[0])):
         y = bad_pixel[0][idx]
         x = bad_pixel[1][idx]
         if (5 < x < width - 5) and (5 < y < height - 5):
             # deal with no-edge bad pixels
-            median = np.median(data[y - 5: y + 5, x - 5: x + 5].ravel())
+            median = np.median(img[y - 5: y + 5, x - 5: x + 5].ravel())
 
         # Now get the pixels on the edges (but not the corners)
         elif x < 5 < y < height - 5:
-            median = np.median(data[y - 5: y + 5, x: x + 5].ravel())
+            median = np.median(img[y - 5: y + 5, x: x + 5].ravel())
 
         # right sides
         elif x > width - 5 and 5 < y < height - 5:
-            median = np.median(data[y - 5: y + 5, x - 5:x].ravel())
+            median = np.median(img[y - 5: y + 5, x - 5:x].ravel())
 
         # top sides
         elif width - 5 > x > 5 > y:
-            median = np.median(data[y: y + 5, x - 5: x + 5].ravel())
+            median = np.median(img[y: y + 5, x - 5: x + 5].ravel())
 
         # bottom sides
         elif 5 < x < width - 5 and y > height - 5:
-            median = np.median(data[y - 5: y, x - 5: x + 5].ravel())
+            median = np.median(img[y - 5: y, x - 5: x + 5].ravel())
 
         # Now get the pixels on the corners
         # top left corner
         elif x < 5 and y < 5:
-            median = np.median(data[y: y + 5, x: x + 5].ravel())
+            median = np.median(img[y: y + 5, x: x + 5].ravel())
 
         # top right corner
         elif x > width - 5 and y < 5:
-            median = np.median(data[y: y + 5, x - 5: x].ravel())
+            median = np.median(img[y: y + 5, x - 5: x].ravel())
 
         # bottom left corner
         elif x < 5 and y > height - 5:
-            median = np.median(data[y - 5: y, x: x + 5].ravel())
+            median = np.median(img[y - 5: y, x: x + 5].ravel())
 
         # bottom right corner
         elif x > width - 5 and y > height - 5:
-            median = np.median(data[y - 5: y, x - 5: x].ravel())
+            median = np.median(img[y - 5: y, x - 5: x].ravel())
         else:
             raise ValueError(f'median was not defined for point (x={x}, y={y})')
 
