@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.ndimage as ndi
-import tifffile as tfile
+import tifffile
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from scipy.spatial.distance import cdist
 
@@ -44,7 +44,7 @@ def isolate_substrate_peaks(config):
     center_frames = []  # Needs to be defined for compatibility with other scripts
 
     # raw_img = tfile.imread(data_path+dir_path+'/'+dir_path+'_%05d.tif'%i).astype(float)
-    raw_img = tfile.imread(f'{output_dir}/substrate_peaks.tiff')
+    raw_img = tifffile.imread(f'{output_dir}/substrate_peaks.tiff')
     # segment data
     seg_img = copy.copy(raw_img)
     seg_img[seg_img > cutoff] = 0
@@ -121,7 +121,7 @@ def isolate_substrate_peaks(config):
         print('time to calculate:', end - start, 's')
     with open(f'{output_dir}/substrate_peaks.json', 'w') as json_file:
         json.dump(substrate_peak_dict, json_file)
-    tfile.imsave(f'{output_dir}/segmented_data.tiff', np.int32(data))
+    tifffile.imsave(f'{output_dir}/segmented_data.tiff', np.int32(data))
 
     if config['show_plots']:
         fig = plt.figure(figsize=(10, 10), dpi=50)
@@ -168,14 +168,14 @@ def isolate_peaks(input_yml, substrate_sim_peak_dict, distance=5):
     data = []
     center_frames = []
 
-    new_bkg = tfile.imread(data_path + dir_path + '/' + dir_path + '_bkg_rb')
+    new_bkg = tifffile.imread(data_path + dir_path + '/' + dir_path + '_bkg_rb')
     bright_bkg = new_bkg > 4 * np.median(new_bkg.ravel())
     bright_bkg = ndi.binary_dilation(bright_bkg, iterations=3)
 
     for i in range(frames[0], frames[1], frames[2]):
         center_frames.append(i)
 
-        raw_img = tfile.imread(data_path + dir_path + '/' + dir_path + '_%05d.tif' % i).astype(float)
+        raw_img = tifffile.imread(data_path + dir_path + '/' + dir_path + '_%05d.tif' % i).astype(float)
         # fig = plt.figure(figsize=(30,30))
         # plt.title('the raw_img image is',fontsize = 12)
         # plt.imshow(raw_img, vmin=0, vmax=100)
@@ -318,7 +318,7 @@ def isolate_peaks(input_yml, substrate_sim_peak_dict, distance=5):
         print('time to calculate:', end - start, 's')
     with open(peak_dict_path, 'w') as json_file:
         json.dump(peak_dict, json_file)
-    tfile.imsave(seg_img_path, np.int32(data))
+    tifffile.imsave(seg_img_path, np.int32(data))
     return
 
 
