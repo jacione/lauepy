@@ -15,7 +15,8 @@ def read_config(yml_file):
         config = yaml.safe_load(f)
 
     # Check the config to make sure it has all the right fields
-    if missing_keys := REQUIRED.keys() - config.keys():
+    missing_keys = REQUIRED.keys() - config.keys()
+    if missing_keys:
         raise KeyError(f'The following required fields were not found in the config file: {missing_keys}')
 
     # Create the working directory if needed
