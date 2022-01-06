@@ -55,7 +55,7 @@ def cleanup_images(config):
     files = sorted(Path(config['data_dir']).iterdir())
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
 
-    for i, img in pbar(enumerate(img_stack)):
+    for i, img in enumerate(pbar(img_stack)):
         # Remove bad pixels
         img = remove_badpixel(img)
 
