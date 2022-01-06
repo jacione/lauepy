@@ -4,7 +4,7 @@ from pathlib import Path
 import yaml
 
 # Get the required keys from the default config file
-example = Path(__file__).parents[1] / 'config_example/config.yml'
+example = Path(__file__).parents[2] / 'config_example/config.yml'
 with open(example, 'r') as f:
     REQUIRED = yaml.safe_load(f)
 
