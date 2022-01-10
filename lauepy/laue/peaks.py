@@ -40,72 +40,61 @@ def isolate_substrate_peaks(config):
     max_pix = config['max_pix']
     start = time.perf_counter()
 
-    data = []
-    center_frames = []  # Needs to be defined for compatibility with other scripts
-
-    # raw_img = tfile.imread(data_path+dir_path+'/'+dir_path+'_%05d.tif'%i).astype(float)
     raw_img = tifffile.imread(f'{output_dir}/substrate_peaks.tiff')
     # segment data
-    seg_img = copy.copy(raw_img)
-    seg_img[seg_img > cutoff] = 0
+    seg_img = np.copy(raw_img)
+    seg_img[seg_img > cutoff] = 0  # FIXME does this do anything if hot pixels have already been removed?
 
     avg = np.median(seg_img)
     sigma = np.std(seg_img)
-    seg_img[seg_img < avg + threshold * sigma] = 0
+    seg_img[seg_img < avg + threshold * sigma] = 0  # FIXME should this be (avg + threshold) * sigma?
 
     # seg_img[seg_img<threshold] = 0
     # read in segmented data
 
-    data.append(seg_img)
-    data = np.array(data)
+    data = np.array(seg_img)
     #     data = np.moveaxis(np.array(data),0,-1)
 
-    gc.collect()
-    peak = 1
+    gc.collect()  # FIXME vestigial?
     substrate_peak_dict = {}
 
-    for z, center_frame in enumerate(center_frames):
+    labels, _ = label(data)  # find all clusters that could be peaks
+    c = Counter(list(labels.ravel())).items()
+    c = [cc[0] for cc in c if min_pix < cc[1] < max_pix]
+    # abnormal_c = [cc[0] for cc in c if cc[1]<= min_pix or cc[1] >= max_pix]
+    # c = [cc[0] for cc in c if cc[1]<max_pix]
+    # print(abnormal_c)
+    ### the following procedure get the list of peaks ###
+    mask = np.isin(labels, c)
+    labels[~mask] = 0
+    data[~mask] = 0
+    data[~mask] = 0
+    num_feature = len(c) - 1
 
-        frame = data[z, :, :]
+    locations = find_objects(labels)  # find the slices where these peaks exist
 
-        labels, num_feature = label(frame)  # find all clusters that could be peaks
-        c = Counter(list(labels.ravel())).items()
-        c = [cc[0] for cc in c if min_pix < cc[1] < max_pix]
-        # abnormal_c = [cc[0] for cc in c if cc[1]<= min_pix or cc[1] >= max_pix]
-        # c = [cc[0] for cc in c if cc[1]<max_pix]
-        # print(abnormal_c)
-        ### the following procedure get the list of peaks ###
-        mask = np.isin(labels, c)
-        labels[~mask] = 0
-        data[z][~mask] = 0
-        frame[~mask] = 0
-        num_feature = len(c) - 1
+    #         c = np.arange(0,num_feature+1)
 
-        locations = find_objects(labels)  # find the slices where these peaks exist
+    lPos = center_of_mass(data, labels=labels, index=c[1:])
+    # print(lPos)
+    # lPos = [(pos[1],pos[0]) for pos in lPos]
+    lpos_cor = []
+    for i, pos in enumerate(lPos):
+        peak_x = pos[1]
+        peak_y = pos[0]
+        # if (peak_x)>256:
+        #     peak_x += 4
+        # if (peak_y)>256:
+        #     peak_y += 5
 
-        #         c = np.arange(0,num_feature+1)
+        lpos_cor.append((peak_x, peak_y))
 
-        lPos = center_of_mass(frame, labels=labels, index=c[1:])
-        # print(lPos)
-        # lPos = [(pos[1],pos[0]) for pos in lPos]
-        lpos_cor = []
-        for i, pos in enumerate(lPos):
-            peak_x = pos[1]
-            peak_y = pos[0]
-            # if (peak_x)>256:
-            #     peak_x += 4
-            # if (peak_y)>256:
-            #     peak_y += 5
+        # lPos = np.array(lPos).reshape([-1,2])
+    lPos = np.array(lpos_cor).reshape([-1, 2])
 
-            lpos_cor.append((peak_x, peak_y))
-
-            # lPos = np.array(lPos).reshape([-1,2])
-        lPos = np.array(lpos_cor).reshape([-1, 2])
-
-        for center in lPos:
-            substrate_peak_dict['peak_%s' % peak] = {'XY': list(center), 'Center_Frame': center_frame}
-            peak += 1
-        # substrate_peak_dict = delete_substrate(peak_dict = peak_dict, substrate_peak = substrate, startID = start_idx)
+    for i, center in enumerate(lPos):
+        substrate_peak_dict[f'peak_{i}'] = {'XY': list(center)}
+    # substrate_peak_dict = delete_substrate(peak_dict = peak_dict, substrate_peak = substrate, startID = start_idx)
 
     end = time.perf_counter()
 
