@@ -22,6 +22,9 @@ prep_coefficient: 1000
 prep_gaussian_sigma: 50
 
 ### Peak-indexing parameters (all start with "pkid_")
-pkid_cutoff: 100000
+pkid_threshold: 1
+pkid_cutoff: 1e7
+pkid_min: 1
+pkid_max: 1000
 
 ### Laue analysis parameters (all start with "laue_")

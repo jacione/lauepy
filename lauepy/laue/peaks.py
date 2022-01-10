@@ -34,10 +34,10 @@ def isolate_substrate_peaks(config):
 
     """
     output_dir = f"{config['working_dir']}/{config['working_id']}"
-    threshold = config['threshold']
+    threshold = config['pkid_threshold']
     cutoff = config['pkid_cutoff']
-    min_pix = config['min_pix']
-    max_pix = config['max_pix']
+    min_pix = config['pkid_min']
+    max_pix = config['pkid_max']
     start = time.perf_counter()
 
     raw_img = tifffile.imread(f'{output_dir}/substrate_peaks.tiff')
