@@ -1,0 +1,28 @@
+
+
+class AtomicObject(object):
+    
+    def __init__(self):
+        self.speciesList=[]
+        self.forcefields={}
+#        twoAtomInteractions=
+#        for species1 in speciesList:
+#            for species2 in speciesList:
+#                #form a grid of two atom interactions
+#                twoAtomInteractions=[species1+'-'+]
+#        #eventually extend to three atom interactions
+#        
+#    def removeCommutationSymmetry(self,list):
+#        for item
+        
+
+    def getAvailableForceFields(self):
+        pass
+    
+    def setForceField(self,atomsNForceField):
+        for atom,fflabel in list(atomsNForceField.items()):
+            atom
+            
+        
+    
+    
