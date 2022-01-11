@@ -35,7 +35,7 @@ def extract_substrate(config):
     # Rolling ball filter removes large-scale features (such as vignette)
     rb_img = rb_img - restoration.rolling_ball(rb_img, radius=config['prep_rolling_ball_radius'])
     
-    tifffile.imsave(f"{config['working_dir']}/{config['working_id']}/substrate_peaks.tiff", np.array(rb_img, dtype='i'))
+    tifffile.imsave(f"{config['working_dir']}/substrate_peaks.tiff", np.array(rb_img, dtype='i'))
 
     return
 
@@ -48,7 +48,7 @@ def cleanup_images(config):
     :type config: dict
     """
     print('Cleaning up Laue images...')
-    output_dir = f"{config['working_dir']}/{config['working_id']}/clean_images"
+    output_dir = f"{config['working_dir']}/clean_images"
     if not Path(output_dir).exists():
         Path(output_dir).mkdir(parents=True)
 

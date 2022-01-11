@@ -2,6 +2,7 @@
 scan: 147
 year: 2021
 exp_id: LauePUP1221
+alt_id: ""
 xtal_params: /home/beams/CXDUSER/34idc-work/2021/LauePUP1221/Analysis/Transfer_to_Sayre_1208/Crystal_Parameters/SrTiO3_crystal_params.json
 det_params: /home/beams/CXDUSER/34idc-work/2021/LauePUP1221/Analysis/Transfer_to_Sayre_1208/Detector_Parameters/eiger_params_LauePUP1221_1208_X40Z5.json'
 

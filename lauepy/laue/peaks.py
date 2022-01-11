@@ -4,7 +4,6 @@ import json
 import re
 import time
 from collections import Counter
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,14 +32,14 @@ def isolate_substrate_peaks(config):
             z_len: the length in z that a peak exists (i.e. number of frames)
 
     """
-    output_dir = f"{config['working_dir']}/{config['working_id']}"
+    working_dir = config['working_dir']
     threshold = config['pkid_threshold']
     cutoff = config['pkid_cutoff']
     min_pix = config['pkid_min']
     max_pix = config['pkid_max']
     start = time.perf_counter()
 
-    raw_img = tifffile.imread(f'{output_dir}/substrate_peaks.tiff')
+    raw_img = tifffile.imread(f'{working_dir}/substrate_peaks.tiff')
     # segment data
     seg_img = np.copy(raw_img)
     seg_img[seg_img > cutoff] = 0  # TODO does this do anything if hot pixels have already been removed?
@@ -91,9 +90,9 @@ def isolate_substrate_peaks(config):
         FullPeakList['x0'].append(peak[0])
         FullPeakList['y0'].append(peak[1])
         
-    with open(f'{output_dir}/substrate_peaks.json', 'w') as json_file:
+    with open(f'{working_dir}/substrate_peaks.json', 'w') as json_file:
         json.dump(substrate_peak_dict, json_file)
-    tifffile.imsave(f'{output_dir}/segmented_data.tiff', np.int32(data))
+    tifffile.imsave(f'{working_dir}/segmented_data.tiff', np.int32(data))
 
     if config['verbose']:
         print('Features:', num_feature)
@@ -105,6 +104,8 @@ def isolate_substrate_peaks(config):
         ax = fig.add_subplot(111)
         ax.imshow(raw_img[:, :], vmax=100)
         ax.scatter(FullPeakList['x0'], FullPeakList['y0'], alpha=0.7, edgecolor='red', facecolor='None', s=160)
+
+    # TODO join with group_substrate_peaks() : there should only be one group since there's only one substrate
 
     return
 
@@ -385,9 +386,7 @@ def group_substrate_peaks(config, min_peaks=3, max_peaks=250):
             df: pandas dataframe of the groups
             XYS: List of xys for each group
     """
-    output_dir = f"{config['working_dir']}/{config['working_id']}"
-    scan = config['scan']
-    spec_file = config['spec_file']
+    output_dir = config['working_dir']
 
     with open(f"{output_dir}/substrate_peaks.json") as f:
         peak_dict = json.load(f)
@@ -417,7 +416,7 @@ def group_substrate_peaks(config, min_peaks=3, max_peaks=250):
     zs = groups['Center_Z'].to_list()
     zs = [zs[i] for i in idx]
     n = len(IDS)
-    spec_vals = extract_spec(spec_file, scan, zs)
+    spec_vals = extract_spec(config, zs)
     for i in range(n):
         group_dict['group_%s' % (i + 1)] = {'Center_Frame': zs[i], 'ID_List': IDS[i], 'phichitheta': spec_vals[i][1],
                                             'Pos': spec_vals[i][0]}
@@ -434,11 +433,13 @@ def group_substrate_peaks(config, min_peaks=3, max_peaks=250):
     return
 
 
-def extract_spec(file, scan, frame_nums):
-    file_name = open(file).read()
+def extract_spec(config, frame_nums):
+    with open(config['spec_file']) as f:
+        file_name = f.read()
+    scan = config['scan']
     find_scan = re.compile(r"#S %s (.*?)#S %s" % (scan, scan + 1), re.DOTALL)
     find_ang = re.compile(r"#P0 (.*?)\n", re.DOTALL)
-    #     find_samp = re.compile(r"#P2(.*?)\n",re.DOTALL)
+    # find_samp = re.compile(r"#P2(.*?)\n",re.DOTALL)
     find_piezo = re.compile(r"(-?\d+.*?)\n")
     scan_txt = find_scan.findall(file_name)
     if len(scan_txt) == 0:
@@ -451,13 +452,13 @@ def extract_spec(file, scan, frame_nums):
     print('theta', theta, 'chi', chi, 'phi', phi)
     new = scan_txt[0].split('Monitor  Detector\n')[1]
     new1 = new.split('#')[0]
-    #     sampvals = find_samp.findall(scan_txt[0])[0].split(" ")
-    #     samp = np.array(sampvals[3:5],dtype=float)
+    # sampvals = find_samp.findall(scan_txt[0])[0].split(" ")
+    # samp = np.array(sampvals[3:5],dtype=float)
 
     extracted = []
 
     frames = find_piezo.findall(new1)
-    #     print(scan_txt)
+    # print(scan_txt)
 
     for num in frame_nums:
         p = np.array(frames[num].split(" ")[:2], dtype=float)
