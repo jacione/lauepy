@@ -1,12 +1,17 @@
 import shutil
 from pathlib import Path
+import re
 
 import yaml
+import numpy as np
 
 # Get the required keys from the default config file
 example = Path(__file__).parents[2] / 'config_example/config.yml'
 with open(example, 'r') as F:
     REQUIRED = yaml.safe_load(F)
+
+FIND_ANGLES = re.compile(r"#P0 (.*?)\n", re.DOTALL)
+FIND_PIEZO = re.compile(r"(-?\d+.*?)\n")
 
 
 def read_config(yml_file):
@@ -39,9 +44,34 @@ def read_config(yml_file):
     return cfg
 
 
-def read_spec(config):
-    # TODO copy function from peaks.py
-    pass
+def get_spec(config):
+    with open(config['spec_file']) as f:
+        spec_file = f.read()
+    scan = config['scan']
+
+    find_scan = re.compile(r"#S %s (.*?)#S %s" % (scan, scan+1), re.DOTALL)
+    spec_txt = find_scan.findall(spec_file)
+    if len(spec_txt) == 0:
+        find_scan = re.compile(r"#S %s .*" % scan, re.DOTALL)
+        spec_txt = find_scan.findall(spec_file)
+
+    return spec_txt[0]
+
+
+def get_spec_angles(config):
+    spec_txt = get_spec(config)
+    vals = FIND_ANGLES.findall(spec_txt)[0].split(" ")
+    theta, chi, phi = np.array(vals[1:4], dtype=float)
+
+    return phi, chi, theta
+
+
+def get_spec_coords(config):
+    spec_txt = get_spec(config)
+    spec_txt = spec_txt.split('Monitor  Detector\n')[1].split('#')[0]
+    coords = np.array([frame.split(" ")[:2] for frame in FIND_PIEZO.findall(spec_txt)], dtype='f')
+
+    return coords
 
 
 def purge(config):
