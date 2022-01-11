@@ -1,8 +1,7 @@
 ### Title and directories
-working_id: scan_0147
-working_dir: /home/beams/CXDUSER/34idc-work/2021/LauePUP1221/Analysis/lauepy_output
-data_dir: /home/beams/CXDUSER/34idc-data/2021/LauePUP1221/AD34idcLaue_LauePUP1221a/LauePUP1221a_S0147
-spec_file: /home/beams/CXDUSER/34idc-data/2021/LauePUP1221/LauePUP1221a.spec"
+scan: 147
+year: 2021
+exp_id: LauePUP1221
 xtal_params: /home/beams/CXDUSER/34idc-work/2021/LauePUP1221/Analysis/Transfer_to_Sayre_1208/Crystal_Parameters/SrTiO3_crystal_params.json
 det_params: /home/beams/CXDUSER/34idc-work/2021/LauePUP1221/Analysis/Transfer_to_Sayre_1208/Detector_Parameters/eiger_params_LauePUP1221_1208_X40Z5.json'
 
@@ -11,14 +10,9 @@ show_plots: false
 verbose: false
 
 ### Image prep parameters (all start with "prep_")
-
-# RB radius for removing the background in the substrate image
 prep_rolling_ball_radius: 50
-# Fraction of pixels in each image that will be set to zero
 prep_zero_fraction: 0.85
-# Arbitrary multiplier - the highest peaks will be roughly this order of magnitude.
 prep_coefficient: 1000
-# Features much larger than this many pixels will be subtracted away.
 prep_gaussian_sigma: 50
 
 ### Peak-indexing parameters (all start with "pkid_")
