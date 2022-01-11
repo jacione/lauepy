@@ -43,11 +43,11 @@ def isolate_substrate_peaks(config):
     raw_img = tifffile.imread(f'{output_dir}/substrate_peaks.tiff')
     # segment data
     seg_img = np.copy(raw_img)
-    seg_img[seg_img > cutoff] = 0  # FIXME does this do anything if hot pixels have already been removed?
+    seg_img[seg_img > cutoff] = 0  # TODO does this do anything if hot pixels have already been removed?
 
     avg = np.median(seg_img)
     sigma = np.std(seg_img)
-    seg_img[seg_img < avg + threshold * sigma] = 0  # FIXME should this be (avg + threshold) * sigma?
+    seg_img[seg_img < avg + threshold * sigma] = 0  # TODO should this be (avg + threshold) * sigma?
 
     # seg_img[seg_img<threshold] = 0
     # read in segmented data
@@ -55,7 +55,7 @@ def isolate_substrate_peaks(config):
     data = np.array(seg_img)
     #     data = np.moveaxis(np.array(data),0,-1)
 
-    gc.collect()  # FIXME vestigial?
+    gc.collect()  # TODO vestigial?
     substrate_peak_dict = {}
 
     labels, _ = label(data)  # find all clusters that could be peaks
@@ -69,48 +69,36 @@ def isolate_substrate_peaks(config):
     labels[~mask] = 0
     data[~mask] = 0
     data[~mask] = 0
-    num_feature = len(c) - 1
+    num_feature = len(c)
 
     locations = find_objects(labels)  # find the slices where these peaks exist
 
     #         c = np.arange(0,num_feature+1)
 
     lPos = center_of_mass(data, labels=labels, index=c[1:])
-    # print(lPos)
-    # lPos = [(pos[1],pos[0]) for pos in lPos]
-    lpos_cor = []
-    for i, pos in enumerate(lPos):
-        peak_x = pos[1]
-        peak_y = pos[0]
-        # if (peak_x)>256:
-        #     peak_x += 4
-        # if (peak_y)>256:
-        #     peak_y += 5
-
-        lpos_cor.append((peak_x, peak_y))
-
-        # lPos = np.array(lPos).reshape([-1,2])
-    lPos = np.array(lpos_cor).reshape([-1, 2])
+    lPos = np.fliplr(np.array(lPos))
 
     for i, center in enumerate(lPos):
         substrate_peak_dict[f'peak_{i}'] = {'XY': list(center)}
     # substrate_peak_dict = delete_substrate(peak_dict = peak_dict, substrate_peak = substrate, startID = start_idx)
 
     end = time.perf_counter()
-
+    
+    # TODO save as NPY instead of JSON
     real_xys = [(substrate_peak_dict[pk]['XY']) for pk in substrate_peak_dict]
     FullPeakList = {'x0': [], 'y0': []}
     for peak in real_xys:
         FullPeakList['x0'].append(peak[0])
         FullPeakList['y0'].append(peak[1])
+        
+    with open(f'{output_dir}/substrate_peaks.json', 'w') as json_file:
+        json.dump(substrate_peak_dict, json_file)
+    tifffile.imsave(f'{output_dir}/segmented_data.tiff', np.int32(data))
 
     if config['verbose']:
         print('Features:', num_feature)
         print('Number of Peaks:', len(list(substrate_peak_dict)))
         print('time to calculate:', end - start, 's')
-    with open(f'{output_dir}/substrate_peaks.json', 'w') as json_file:
-        json.dump(substrate_peak_dict, json_file)
-    tifffile.imsave(f'{output_dir}/segmented_data.tiff', np.int32(data))
 
     if config['show_plots']:
         fig = plt.figure(figsize=(10, 10), dpi=50)
