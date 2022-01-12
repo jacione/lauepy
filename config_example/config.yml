@@ -7,7 +7,7 @@ xtal_params: /home/beams/CXDUSER/34idc-work/2021/LauePUP1221/Analysis/Transfer_t
 det_params: /home/beams/CXDUSER/34idc-work/2021/LauePUP1221/Analysis/Transfer_to_Sayre_1208/Detector_Parameters/eiger_params_LauePUP1221_1208_X40Z5.json'
 
 ### General parameters
-show_plots: false
+show_plots: true
 verbose: false
 
 ### Image prep parameters (all start with "prep_")
@@ -17,9 +17,7 @@ prep_coefficient: 1000
 prep_gaussian_sigma: 50
 
 ### Peak-indexing parameters (all start with "pkid_")
-pkid_threshold: 1
-pkid_cutoff: 10000000
-pkid_min: 1
-pkid_max: 1000
+pkid_threshold: 3
+pkid_min_dist: 25
 
 ### Laue analysis parameters (all start with "laue_")

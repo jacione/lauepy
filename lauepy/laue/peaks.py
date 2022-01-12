@@ -12,13 +12,14 @@ import scipy.ndimage as ndi
 import tifffile
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from scipy.spatial.distance import cdist
+from skimage.feature import peak_local_max
 
 import lauepy.laue.forward_sim as fsim
 from lauepy.rxlibs.xmd34 import geometry as geo
 from lauepy.rxlibs.xmd34 import lattice as latt
 
 
-def isolate_substrate_peaks(config):
+def index_substrate(config):
     """ This function takes a numpy array of data and finds the center of mass of all peaks,
      thresholding by a minimum peak width in pixels
 
@@ -33,79 +34,32 @@ def isolate_substrate_peaks(config):
 
     """
     working_dir = config['working_dir']
-    threshold = config['pkid_threshold']
-    cutoff = config['pkid_cutoff']
-    min_pix = config['pkid_min']
-    max_pix = config['pkid_max']
+    
     start = time.perf_counter()
 
-    raw_img = tifffile.imread(f'{working_dir}/substrate_peaks.tiff')
-    # segment data
-    seg_img = np.copy(raw_img)
-    seg_img[seg_img > cutoff] = 0  # TODO does this do anything if hot pixels have already been removed?
-
-    avg = np.median(seg_img)
-    sigma = np.std(seg_img)
-    seg_img[seg_img < avg + threshold * sigma] = 0  # TODO should this be (avg + threshold) * sigma?
-
-    # seg_img[seg_img<threshold] = 0
-    # read in segmented data
-
-    data = np.array(seg_img)
-    #     data = np.moveaxis(np.array(data),0,-1)
-
-    gc.collect()  # TODO vestigial?
-    substrate_peak_dict = {}
-
-    labels, _ = label(data)  # find all clusters that could be peaks
-    c = Counter(list(labels.ravel())).items()
-    c = [cc[0] for cc in c if min_pix < cc[1] < max_pix]
-    # abnormal_c = [cc[0] for cc in c if cc[1]<= min_pix or cc[1] >= max_pix]
-    # c = [cc[0] for cc in c if cc[1]<max_pix]
-    # print(abnormal_c)
-    ### the following procedure get the list of peaks ###
-    mask = np.isin(labels, c)
-    labels[~mask] = 0
-    data[~mask] = 0
-    data[~mask] = 0
-    num_feature = len(c)
-
-    locations = find_objects(labels)  # find the slices where these peaks exist
-
-    #         c = np.arange(0,num_feature+1)
-
-    lPos = center_of_mass(data, labels=labels, index=c[1:])
-    lPos = np.fliplr(np.array(lPos))
-
-    for i, center in enumerate(lPos):
-        substrate_peak_dict[f'peak_{i}'] = {'XY': list(center)}
-    # substrate_peak_dict = delete_substrate(peak_dict = peak_dict, substrate_peak = substrate, startID = start_idx)
+    img = tifffile.imread(f'{working_dir}/substrate_peaks.tiff')
+    img = ndi.median_filter(img, size=2)
+    
+    threshold = np.median(img) * config['pkid_threshold']
+    min_dist  = config['pkid_min_dist']
+    
+    peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold)
+    peak_coords = np.fliplr(peak_coords)
+    
+    np.save(f"{working_dir}/substrate_peaks.npy", peak_coords)
 
     end = time.perf_counter()
     
-    # TODO save as NPY instead of JSON
-    real_xys = [(substrate_peak_dict[pk]['XY']) for pk in substrate_peak_dict]
-    FullPeakList = {'x0': [], 'y0': []}
-    for peak in real_xys:
-        FullPeakList['x0'].append(peak[0])
-        FullPeakList['y0'].append(peak[1])
-        
-    with open(f'{working_dir}/substrate_peaks.json', 'w') as json_file:
-        json.dump(substrate_peak_dict, json_file)
-    tifffile.imsave(f'{working_dir}/segmented_data.tiff', np.int32(data))
-
     if config['verbose']:
         print('Features:', num_feature)
         print('Number of Peaks:', len(list(substrate_peak_dict)))
         print('time to calculate:', end - start, 's')
 
     if config['show_plots']:
-        fig = plt.figure(figsize=(10, 10), dpi=50)
-        ax = fig.add_subplot(111)
-        ax.imshow(raw_img[:, :], vmax=100)
-        ax.scatter(FullPeakList['x0'], FullPeakList['y0'], alpha=0.7, edgecolor='red', facecolor='None', s=160)
-
-    # TODO join with group_substrate_peaks() : there should only be one group since there's only one substrate
+        fig = plt.figure()
+        plt.imshow(img[:, :], vmax=100)
+        plt.scatter(peak_coords[:,0], peak_coords[:,1], edgecolor='red', facecolor='None', s=160)
+        plt.show()
 
     return
 
@@ -366,69 +320,6 @@ def group_peaks(input_yml, min_peaks=3, max_peaks=250):
         plt.show()
 
     with open(group_dict_path, 'w') as json_file:
-        json.dump(group_dict, json_file)
-    return
-
-
-def group_substrate_peaks(config, min_peaks=3, max_peaks=250):
-    """ 
-    This function groups peaks by the z values of their centers of mass. Peaks that 
-    are centered on the same frame will be in roughly the same location. After this,
-    they are sorted by their length in z because larger length means larger grain. The 
-    output should be groups of grains which are roughly the same size in the same
-    position on the grid.
-
-    inputs:
-            center_xy: list of xy values for all peaks
-            center_z: list of z values for all peaks
-            min_peaks: minimum number of peaks to be considered a group
-    outputs:
-            df: pandas dataframe of the groups
-            XYS: List of xys for each group
-    """
-    output_dir = config['working_dir']
-
-    with open(f"{output_dir}/substrate_peaks.json") as f:
-        peak_dict = json.load(f)
-    center_z = [peak_dict[pk]['Center_Frame'] for pk in peak_dict]
-    group_dict = {}
-    d = {'Peak_ID': range(1, len(center_z) + 1), 'Center_Z': center_z}
-    df = pd.DataFrame(data=d)
-
-    #     df = df.set_index('Peak_ID')
-    groups = df.groupby('Center_Z')['Peak_ID'].apply(list).reset_index(name='Peak_ID')  # group peaks by center z value
-    #     groups1 = df.groupby('Center_Z')['Peak_ID'].apply(list).reset_index(name='ID')
-
-    IDS = groups['Peak_ID'].to_list()
-    df = df.groupby('Center_Z').count().reset_index()
-
-    idx_low = df.index[df['Peak_ID'] > min_peaks].to_list()
-    idx_high = df.index[df['Peak_ID'] < max_peaks].to_list()
-    idx = [value for value in idx_low if value in idx_high]
-
-    #     print(idx)
-    df = df.loc[df['Peak_ID'] > min_peaks]
-    df = df.loc[df['Peak_ID'] < max_peaks]
-    idx = df.index.tolist()
-    #     print(idx)
-    IDS = [IDS[i] for i in idx]
-
-    zs = groups['Center_Z'].to_list()
-    zs = [zs[i] for i in idx]
-    n = len(IDS)
-    spec_vals = extract_spec(config, zs)
-    for i in range(n):
-        group_dict['group_%s' % (i + 1)] = {'Center_Frame': zs[i], 'ID_List': IDS[i], 'phichitheta': spec_vals[i][1],
-                                            'Pos': spec_vals[i][0]}
-    print('Number of Groups:', len([grp for grp in group_dict]))
-    if config['show_plots']:
-        IDS = [len(i) for i in IDS]
-        plt.scatter(zs, IDS)
-        plt.ylabel('number of peaks')
-        plt.xlabel('frame')
-        plt.show()
-
-    with open(f"{output_dir}/substrate_groups.json", 'w') as json_file:
         json.dump(group_dict, json_file)
     return
 
