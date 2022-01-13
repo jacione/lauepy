@@ -1,6 +1,5 @@
 import shutil
 from pathlib import Path
-import re
 from xrayutilities.io import spec
 
 import yaml
@@ -11,11 +10,16 @@ example = Path(__file__).parents[2] / 'config_example/config.yml'
 with open(example, 'r') as F:
     REQUIRED = yaml.safe_load(F)
 
-FIND_ANGLES = re.compile(r"#P0 (.*?)\n", re.DOTALL)
-FIND_PIEZO = re.compile(r"(-?\d+.*?)\n")
-
 
 def read_config(yml_file):
+    """
+    Reads a configuration file and returns it as a dictionary.
+
+    :param yml_file: path to a YML file
+    :type yml_file: str
+    :return: config
+    :rtype: dict
+    """
     # Load the configuration file
     with open(yml_file, 'r') as f:
         cfg = yaml.safe_load(f)
@@ -29,9 +33,9 @@ def read_config(yml_file):
     year = cfg['year']
     exp_id = cfg['exp_id']
     scan = cfg['scan']
-    cfg['working_dir'] = f"/home/beams/CXDUSER/34idc-work/{year}/{exp_id}/Analysis/lauepy_output/scan_{scan:04}"
-    cfg['data_dir'] = f"/home/beams/CXDUSER/34idc-data/{year}/{exp_id}/AD34idcLaue_{exp_id}a/{exp_id}a_S{scan:04}"
-    cfg['spec_file'] = f"/home/beams/CXDUSER/34idc-data/{year}/{exp_id}/{exp_id}a.spec"
+    cfg['working_dir'] = f"/home/beams7/CXDUSER/34idc-work/{year}/{exp_id}/Analysis/lauepy_output/scan_{scan:04}"
+    cfg['data_dir'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/AD34idcLaue_{exp_id}a/{exp_id}a_S{scan:04}"
+    cfg['spec_file'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/{exp_id}a.spec"
 
     if not Path(cfg['data_dir']).exists():
         raise FileNotFoundError('Could not find the specified DATA DIRECTORY. Check config.')
@@ -46,16 +50,39 @@ def read_config(yml_file):
 
 
 def read_spec_log(config, key):
+    """
+    Reads the positions of a single motor for every frame in a scan.
+
+    :param config: configuration dictionary
+    :type config: dict
+    :param key: motor name
+    :type key: str
+    :return: array of shape (N,) where N is the number of frames in the scan
+    :rtype: ndarray
+    """
+    # The (scan - 1) indexing is needed because the spec file starts at scan 1 (not zero)
     scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
     scan.ReadData()
     try:
-        arr = scan.data[key]
+        # Try to find the key in the column headers of the spec table.
+        arr = np.array(scan.data[key])
     except KeyError:
+        # If the key isn't in the header, then it was held constant. In that case, just use the initial value.
         arr = np.ones(scan.data.shape[0]) * scan.init_motor_pos[f'INIT_MOPO_{key}']
     return arr
 
 
 def read_spec_init(config, key):
+    """
+    Reads the initial position of a single motor for a single scan.
+
+    :param config: configuration dictionary
+    :type config: dict
+    :param key: motor name
+    :type key: str
+    :return: initial motor position
+    :rtype: float
+    """
     scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
     return scan.init_motor_pos[f'INIT_MOPO_{key}']
 
