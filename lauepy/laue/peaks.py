@@ -4,13 +4,14 @@ import json
 import re
 import time
 from collections import Counter
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.ndimage as ndi
 import tifffile
-from scipy.ndimage.measurements import label, find_objects, center_of_mass
+from scipy.ndimage.measurements import label, center_of_mass
 from scipy.spatial.distance import cdist
 from skimage.feature import peak_local_max
 
@@ -31,7 +32,7 @@ def find_substrate_peaks(config):
     img = ndi.median_filter(img, size=2)
     
     threshold = np.median(img) * config['pkid_threshold']
-    min_dist  = config['pkid_min_dist']
+    min_dist = config['pkid_min_dist']
     
     peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold)
     peak_coords = np.fliplr(peak_coords)
@@ -47,7 +48,36 @@ def find_substrate_peaks(config):
     if config['show_plots']:
         fig = plt.figure()
         plt.imshow(img[:, :], vmax=100)
-        plt.scatter(peak_coords[:,0], peak_coords[:,1], edgecolor='red', facecolor='None', s=160)
+        plt.scatter(peak_coords[:, 0], peak_coords[:, 1], edgecolor='red', facecolor='None', s=160)
+        plt.show()
+
+    return
+
+
+def find_all_peaks(config):
+    start = time.perf_counter()
+
+    working_dir = config['working_dir']
+
+    files = sorted(Path(f"{working_dir}/clean_images").iterdir())
+    img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
+
+    threshold = np.median(img_stack) * config['pkid_threshold']
+    min_dist = config['pkid_min_dist']
+
+    peak_coords = peak_local_max(img_stack, min_distance=min_dist, threshold_abs=threshold)
+
+    np.save(f"{working_dir}/all_peaks.npy", peak_coords)
+
+    end = time.perf_counter()
+
+    if config['verbose']:
+        print('Number of Peaks:', peak_coords.shape[0])
+        print('time to calculate:', end - start, 's')
+
+    if config['show_plots']:
+        plt.imshow(img_stack[0], vmax=100)
+        plt.scatter(peak_coords[:, 0], peak_coords[:, 1], edgecolor='red', facecolor='None', s=160)
         plt.show()
 
     return
