@@ -4,13 +4,14 @@ Image cleanup to prepare for the Laue analysis
 import copy
 from collections import Counter
 from pathlib import Path
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.ndimage as ndi
 import tifffile
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
-from skimage import restoration
+from skimage import restoration, exposure
 from progressbar import progressbar as pbar
 
 
@@ -29,13 +30,18 @@ def extract_substrate(config):
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
 
     # The median of all frames removes short-lived features (such as Laue peaks!)
-    rb_img = np.median(img_stack, axis=0)
-    rb_img = remove_badpixel(rb_img)
+    img = np.median(img_stack, axis=0)
+    img = remove_badpixel(img)
+    img = exposure.adjust_gamma(img, config['prep_gamma'], np.mean(img))
 
     # Rolling ball filter removes large-scale features (such as vignette)
-    rb_img = rb_img - restoration.rolling_ball(rb_img, radius=config['prep_rolling_ball_radius'])
+    # img_rb = img - restoration.rolling_ball(img, radius=config['prep_rolling_ball_radius'])
     
-    tifffile.imsave(f"{config['working_dir']}/substrate_peaks.tiff", np.array(rb_img, dtype='i'))
+    # Gaussian filter is faster and has less noise - particularly around the edges.
+    img = img - ndi.gaussian_filter(img, config['prep_gaussian_sigma'])
+    img[img < 0] = 0
+    
+    tifffile.imsave(f"{config['working_dir']}/substrate_peaks.tiff", np.array(img, dtype='i'))
 
     return
 
@@ -54,22 +60,38 @@ def cleanup_images(config):
 
     files = sorted(Path(config['data_dir']).iterdir())
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
+    
+    t0 = time.perf_counter()
 
+    print('Removing bad pixels...')
     for i, img in enumerate(pbar(img_stack)):
         # Remove bad pixels
-        img = remove_badpixel(img)
-
-        # Normalize the intensity of each image
-        img = np.clip(img, 0, np.quantile(img, 0.999))
-        img = (img - np.quantile(img, config['prep_zero_fraction'])) / np.mean(img) * config['prep_coefficient']
-
-        # Subtract the very broad features
-        img = img - ndi.gaussian_filter(img, config['prep_gaussian_sigma'])
-
-        # Remove negative values
-        img[img < 0] = 0
-
+        img_stack[i] = remove_badpixel(img)
+    
+    # Compress the dynamic range slightly
+    print('Adjusting dynamic range...')
+    img_stack = np.clip(img_stack, 0, np.quantile(img_stack, 0.999))
+    img_stack = exposure.adjust_gamma(img_stack, config['prep_gamma'], np.mean(img_stack))
+    
+    # Normalize the intensity of each image
+    print('Normalizing intensity...')
+    coeff = config['prep_coefficient'] / np.mean(img_stack, axis=(1, 2))[:, None, None]
+    zero_point = np.quantile(img_stack, config['prep_zero_fraction'], axis=(1, 2))[:, None, None]
+    img_stack = (img_stack - zero_point) * coeff
+    
+    # Subtract the broad features
+    print('Subtracting background features...')
+    sigma = (0, config['prep_gaussian_sigma'], config['prep_gaussian_sigma'])
+    img_stack = img_stack - ndi.gaussian_filter(img_stack, sigma=sigma)
+    img_stack[img_stack < 0] = 0
+    
+    print('Saving cleaned-up images...')
+    for i, img in enumerate(pbar(img_stack)):
         tifffile.imsave(f'{output_dir}/img_{i:05}.tiff', np.array(img, dtype='i'))
+        
+    t1 = time.perf_counter()
+    if config['verbose']:
+        print(f'Total time: {t1-t0}')
 
     if config['show_plots']:
         files = sorted(Path(output_dir).iterdir())
