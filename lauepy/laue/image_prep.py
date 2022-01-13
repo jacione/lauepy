@@ -83,6 +83,10 @@ def cleanup_images(config):
     print('Subtracting background features...')
     sigma = (0, config['prep_gaussian_sigma'], config['prep_gaussian_sigma'])
     img_stack = img_stack - ndi.gaussian_filter(img_stack, sigma=sigma)
+    
+    # Suppress salt & pepper noise
+    print('Denoising...')
+    img_stack = ndi.gaussian_filter(img_stack, sigma=(0, 1, 1))
     img_stack[img_stack < 0] = 0
     
     print('Saving cleaned-up images...')

@@ -8,7 +8,7 @@ det_params: /home/beams/CXDUSER/34idc-work/2021/LauePUP1221/Analysis/Transfer_to
 
 ### General parameters
 show_plots: false
-verbose: false
+verbose: true
 
 ### Image prep parameters (all start with "prep_")
 prep_gamma: 0.25
@@ -17,7 +17,9 @@ prep_coefficient: 1000
 prep_gaussian_sigma: 50
 
 ### Peak-indexing parameters (all start with "pkid_")
-pkid_threshold: 3
-pkid_min_dist: 25
+pkid_substrate_threshold: 7
+pkid_substrate_distance: 25
+pkid_sample_threshold: 15
+pkid_sample_distance: 14
 
 ### Laue analysis parameters (all start with "laue_")

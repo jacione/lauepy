@@ -8,6 +8,7 @@ import lauepy.laue.utils as ut
 def main(config):
     config = ut.read_config(config)
     pk.find_substrate_peaks(config)
+    pk.find_sample_peaks(config)
     pass
 
 

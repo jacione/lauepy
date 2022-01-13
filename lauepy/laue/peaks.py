@@ -7,6 +7,7 @@ from collections import Counter
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.animation import ArtistAnimation
 import numpy as np
 import pandas as pd
 import scipy.ndimage as ndi
@@ -14,6 +15,7 @@ import tifffile
 from scipy.ndimage.measurements import label, center_of_mass
 from scipy.spatial.distance import cdist
 from skimage.feature import peak_local_max
+from skimage import draw
 
 import lauepy.laue.forward_sim as fsim
 from lauepy.rxlibs.xmd34 import geometry as geo
@@ -31,53 +33,72 @@ def find_substrate_peaks(config):
     img = tifffile.imread(f'{working_dir}/substrate_peaks.tiff')
     img = ndi.median_filter(img, size=2)
     
-    threshold = np.median(img) * config['pkid_threshold']
-    min_dist = config['pkid_min_dist']
+    threshold = np.mean(img) * config['pkid_substrate_threshold']
+    min_dist = config['pkid_substrate_distance']
     
-    peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold)
+    peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
     peak_coords = np.fliplr(peak_coords)
     
     np.save(f"{working_dir}/substrate_peaks.npy", peak_coords)
+    
+    structure = np.zeros((15, 15))
+    structure[draw.disk((7, 7), 5.5)] = 1
+    sub_mask = ndi.binary_dilation(img > threshold, structure=structure)
+    np.save(f"{working_dir}/substrate_mask.npy", np.array([sub_mask]))
 
     end = time.perf_counter()
     
     if config['verbose']:
-        print('Number of Peaks:', peak_coords.shape[0])
+        print('Number of substrate peaks:', peak_coords.shape[0])
         print('time to calculate:', end - start, 's')
 
     if config['show_plots']:
-        fig = plt.figure()
-        plt.imshow(img[:, :], vmax=100)
+        plt.figure()
+        plt.imshow(img, vmax=100)
+        plt.scatter(peak_coords[:, 0], peak_coords[:, 1], edgecolor='red', facecolor='None', s=160)
+        plt.figure()
+        plt.imshow(sub_mask)
         plt.scatter(peak_coords[:, 0], peak_coords[:, 1], edgecolor='red', facecolor='None', s=160)
         plt.show()
 
     return
 
 
-def find_all_peaks(config):
+def find_sample_peaks(config):
     start = time.perf_counter()
 
     working_dir = config['working_dir']
 
     files = sorted(Path(f"{working_dir}/clean_images").iterdir())
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
+    
+    threshold = np.mean(img_stack) * config['pkid_sample_threshold']
+    min_dist = config['pkid_sample_distance']
 
-    threshold = np.median(img_stack) * config['pkid_threshold']
-    min_dist = config['pkid_min_dist']
+    # Load the mask from the substrate
+    try:
+        substrate_mask = np.load(f"{working_dir}/substrate_mask.npy")
+    except FileNotFoundError:
+        find_substrate_peaks(config)
+        substrate_mask = np.load(f"{working_dir}/substrate_mask.npy")
+    substrate_mask = np.repeat(substrate_mask, img_stack.shape[0], axis=0)
+    
+    img_stack = np.ma.array(img_stack, mask=substrate_mask)
 
-    peak_coords = peak_local_max(img_stack, min_distance=min_dist, threshold_abs=threshold)
+    peak_coords = peak_local_max(img_stack, min_distance=min_dist, threshold_abs=threshold, exclude_border=(3, 10, 10))
 
-    np.save(f"{working_dir}/all_peaks.npy", peak_coords)
+    np.save(f"{working_dir}/sample_peaks.npy", peak_coords)
 
     end = time.perf_counter()
 
     if config['verbose']:
-        print('Number of Peaks:', peak_coords.shape[0])
+        print('Number of sample peaks:', peak_coords.shape[0])
         print('time to calculate:', end - start, 's')
 
     if config['show_plots']:
-        plt.imshow(img_stack[0], vmax=100)
-        plt.scatter(peak_coords[:, 0], peak_coords[:, 1], edgecolor='red', facecolor='None', s=160)
+        plt.imshow(np.max(img_stack[110:130], axis=0), vmax=60)
+        sl = (peak_coords[:, 0] > 110) * (peak_coords[:, 0] < 130)
+        plt.scatter(peak_coords[sl][:, 2], peak_coords[sl][:, 1], edgecolor='red', facecolor='None', s=160)
         plt.show()
 
     return
