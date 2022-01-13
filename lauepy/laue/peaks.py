@@ -19,23 +19,13 @@ from lauepy.rxlibs.xmd34 import geometry as geo
 from lauepy.rxlibs.xmd34 import lattice as latt
 
 
-def index_substrate(config):
-    """ This function takes a numpy array of data and finds the center of mass of all peaks,
-     thresholding by a minimum peak width in pixels
-
-    inputs:
-            data_path: path to reduced data
-            weight_path: path to weights
-
-    outputs:
-            center_xy: list of the xy values of the centers of mass for all peaks
-            center_z: list of the z values (frames) of the centers of mass of each peak
-            z_len: the length in z that a peak exists (i.e. number of frames)
-
+def find_substrate_peaks(config):
     """
-    working_dir = config['working_dir']
-    
+    Find the coordinates of peaks in the substrate-only Laue image
+    """
     start = time.perf_counter()
+    
+    working_dir = config['working_dir']
 
     img = tifffile.imread(f'{working_dir}/substrate_peaks.tiff')
     img = ndi.median_filter(img, size=2)
@@ -51,8 +41,7 @@ def index_substrate(config):
     end = time.perf_counter()
     
     if config['verbose']:
-        print('Features:', num_feature)
-        print('Number of Peaks:', len(list(substrate_peak_dict)))
+        print('Number of Peaks:', peak_coords.shape[0])
         print('time to calculate:', end - start, 's')
 
     if config['show_plots']:

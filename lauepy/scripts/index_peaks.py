@@ -7,7 +7,7 @@ import lauepy.laue.utils as ut
 @click.argument('config')
 def main(config):
     config = ut.read_config(config)
-    pk.index_substrate(config)
+    pk.find_substrate_peaks(config)
     pass
 
 
