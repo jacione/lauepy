@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 import re
+from xrayutilities.io import spec
 
 import yaml
 import numpy as np
@@ -44,34 +45,19 @@ def read_config(yml_file):
     return cfg
 
 
-def get_spec(config):
-    with open(config['spec_file']) as f:
-        spec_file = f.read()
-    scan = config['scan']
-
-    find_scan = re.compile(r"#S %s (.*?)#S %s" % (scan, scan+1), re.DOTALL)
-    spec_txt = find_scan.findall(spec_file)
-    if len(spec_txt) == 0:
-        find_scan = re.compile(r"#S %s .*" % scan, re.DOTALL)
-        spec_txt = find_scan.findall(spec_file)
-
-    return spec_txt[0]
+def read_spec_log(config, key):
+    scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
+    scan.ReadData()
+    try:
+        arr = scan.data[key]
+    except KeyError:
+        arr = np.ones(scan.data.shape[0]) * scan.init_motor_pos[f'INIT_MOPO_{key}']
+    return arr
 
 
-def get_spec_angles(config):
-    spec_txt = get_spec(config)
-    vals = FIND_ANGLES.findall(spec_txt)[0].split(" ")
-    theta, chi, phi = np.array(vals[1:4], dtype=float)
-
-    return phi, chi, theta
-
-
-def get_spec_coords(config):
-    spec_txt = get_spec(config)
-    spec_txt = spec_txt.split('Monitor  Detector\n')[1].split('#')[0]
-    coords = np.array([frame.split(" ")[:2] for frame in FIND_PIEZO.findall(spec_txt)], dtype='f')
-
-    return coords
+def read_spec_init(config, key):
+    scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
+    return scan.init_motor_pos[f'INIT_MOPO_{key}']
 
 
 def purge(config):
