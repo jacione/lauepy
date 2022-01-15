@@ -20,6 +20,7 @@ from skimage import draw
 import lauepy.laue.forward_sim as fsim
 from lauepy.rxlibs.xmd34 import geometry as geo
 from lauepy.rxlibs.xmd34 import lattice as latt
+import lauepy.laue.utils as ut
 
 
 def find_substrate_peaks(config):
@@ -87,6 +88,12 @@ def find_sample_peaks(config):
 
     peak_coords = peak_local_max(img_stack, min_distance=min_dist, threshold_abs=threshold, exclude_border=(3, 10, 10))
 
+    sample_xyz = ut.read_spec_log(config, 'Lab_X', 'Lab_Y', 'Lab_Z')
+
+    peak_coords = np.column_stack((sample_xyz[peak_coords[:, 0]], peak_coords))
+
+    peak_coords = np.rec.fromrecords(peak_coords, names=('lab_x', 'lab_y', 'lab_z', 'frame', 'img_y', 'img_x'))
+
     np.save(f"{working_dir}/sample_peaks.npy", peak_coords)
 
     end = time.perf_counter()
@@ -97,8 +104,8 @@ def find_sample_peaks(config):
 
     if config['show_plots']:
         plt.imshow(np.max(img_stack[110:130], axis=0), vmax=60)
-        sl = (peak_coords[:, 0] > 110) * (peak_coords[:, 0] < 130)
-        plt.scatter(peak_coords[sl][:, 2], peak_coords[sl][:, 1], edgecolor='red', facecolor='None', s=160)
+        sl = (peak_coords['frame'] > 110) * (peak_coords['frame'] < 130)
+        plt.scatter(peak_coords[sl]['img_x'], peak_coords[sl]['img_y'], edgecolor='red', facecolor='None', s=160)
         plt.show()
 
     return

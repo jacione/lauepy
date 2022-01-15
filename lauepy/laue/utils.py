@@ -49,26 +49,29 @@ def read_config(yml_file):
     return cfg
 
 
-def read_spec_log(config, key):
+def read_spec_log(config, *keys):
     """
     Reads the positions of a single motor for every frame in a scan.
 
     :param config: configuration dictionary
     :type config: dict
-    :param key: motor name
-    :type key: str
+    :param keys: motor name
+    :type keys: str
     :return: array of shape (N,) where N is the number of frames in the scan
     :rtype: ndarray
     """
     # The (scan - 1) indexing is needed because the spec file starts at scan 1 (not zero)
     scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
     scan.ReadData()
-    try:
-        # Try to find the key in the column headers of the spec table.
-        arr = np.array(scan.data[key])
-    except KeyError:
-        # If the key isn't in the header, then it was held constant. In that case, just use the initial value.
-        arr = np.ones(scan.data.shape[0]) * scan.init_motor_pos[f'INIT_MOPO_{key}']
+    arr = np.empty((len(keys), scan.data.shape[0]))
+    for i, key in enumerate(keys):
+        try:
+            # Try to find the key in the column headers of the spec table.
+            arr[:, i] = np.array(scan.data[key])
+        except KeyError:
+            # If the key isn't in the header, then it was held constant. In that case, just use the initial value.
+            arr[:, i] = scan.init_motor_pos[f'INIT_MOPO_{key}']
+    arr = np.rec.fromrecords(arr, names=keys)
     return arr
 
 
