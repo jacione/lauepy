@@ -63,15 +63,14 @@ def read_spec_log(config, *keys):
     # The (scan - 1) indexing is needed because the spec file starts at scan 1 (not zero)
     scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
     scan.ReadData()
-    arr = np.empty((len(keys), scan.data.shape[0]))
+    arr = np.empty((scan.data.shape[0], len(keys)))
     for i, key in enumerate(keys):
         try:
             # Try to find the key in the column headers of the spec table.
             arr[:, i] = np.array(scan.data[key])
-        except KeyError:
+        except ValueError:
             # If the key isn't in the header, then it was held constant. In that case, just use the initial value.
             arr[:, i] = scan.init_motor_pos[f'INIT_MOPO_{key}']
-    arr = np.rec.fromrecords(arr, names=keys)
     return arr
 
 

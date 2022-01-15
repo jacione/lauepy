@@ -14,6 +14,7 @@ import scipy.ndimage as ndi
 import tifffile
 from scipy.ndimage.measurements import label, center_of_mass
 from scipy.spatial.distance import cdist
+from scipy.stats import gaussian_kde
 from skimage.feature import peak_local_max
 from skimage import draw
 
@@ -103,9 +104,17 @@ def find_sample_peaks(config):
         print('time to calculate:', end - start, 's')
 
     if config['show_plots']:
-        plt.imshow(np.max(img_stack[110:130], axis=0), vmax=60)
-        sl = (peak_coords['frame'] > 110) * (peak_coords['frame'] < 130)
-        plt.scatter(peak_coords[sl]['img_x'], peak_coords[sl]['img_y'], edgecolor='red', facecolor='None', s=160)
+        plt.imshow(np.max(img_stack, axis=0), vmax=60)
+        plt.scatter(peak_coords['img_x'], peak_coords['img_y'], edgecolor='red', facecolor='None', s=160)
+        plt.figure()
+        num_x = np.unique(peak_coords.lab_x).shape[0]
+        num_z = np.unique(peak_coords.lab_z).shape[0]
+        if num_z > 1:
+            plt.hist2d(peak_coords.lab_x, peak_coords.lab_z, (num_x, num_z), cmap=plt.cm.jet)
+            plt.colorbar()
+        else:
+            plt.hist(peak_coords.lab_x, num_x)
+        print()
         plt.show()
 
     return
