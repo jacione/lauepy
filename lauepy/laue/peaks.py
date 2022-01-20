@@ -51,8 +51,11 @@ def find_substrate_peaks(config):
     end = time.perf_counter()
     
     if config['verbose']:
-        print('Number of substrate peaks:', peak_coords.shape[0])
-        print('time to calculate:', end - start, 's')
+        print(f'Min peak distance: {min_dist} pixels')
+        print(f'Rel. peak threshold: {config["pkid_substrate_threshold"]}')
+        print(f'Abs. peak threshold: {threshold:0.3}')
+        print(f'Number of substrate peaks: {peak_coords.shape[0]}')
+        print(f'time to calculate: {end-start: 0.3} sec')
 
     if config['show_plots']:
         plt.figure()
@@ -121,18 +124,8 @@ def find_sample_peaks(config):
 
 
 def isolate_peaks(input_yml, substrate_sim_peak_dict, distance=5):
-    """ This function takes a numpy array of data and finds the center of mass of all peaks,
-     thresholding by a minimum peak width in pixels
-
-    inputs:
-            data_path: path to reduced data
-            weight_path: path to weights
-
-    outputs:
-            center_xy: list of the xy values of the centers of mass for all peaks
-            center_z: list of the z values (frames) of the centers of mass of each peak
-            z_len: the length in z that a peak exists (i.e. number of frames)
-
+    """
+    Old function for non-substrate peak finding.
     """
     print("isolate peaks")
     with open(input_yml, 'r') as yml_file:

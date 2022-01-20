@@ -30,7 +30,7 @@ def extract_substrate(config):
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
 
     # The median of all frames removes short-lived features (such as Laue peaks!)
-    img = np.median(img_stack, axis=0)
+    img = np.quantile(img_stack, config['prep_quantile'], axis=0)
     img = remove_badpixel(img)
     img = exposure.adjust_gamma(img, config['prep_gamma'], np.mean(img))
 
@@ -40,6 +40,11 @@ def extract_substrate(config):
     # Gaussian filter is faster and has less noise - particularly around the edges.
     img = img - ndi.gaussian_filter(img, config['prep_gaussian_sigma'])
     img[img < 0] = 0
+    
+    if config['show_plots']:
+        plt.figure()
+        plt.imshow(img, vmax=np.quantile(img, 0.99))
+        plt.show()
     
     tifffile.imsave(f"{config['working_dir']}/substrate_peaks.tiff", np.array(img, dtype='i'))
 

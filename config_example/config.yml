@@ -11,13 +11,14 @@ show_plots: true
 verbose: true
 
 ### Image prep parameters (all start with "prep_")
+prep_quantile: 0.01
 prep_gamma: 0.25
 prep_zero_fraction: 0.85
 prep_coefficient: 1000
 prep_gaussian_sigma: 50
 
 ### Peak-indexing parameters (all start with "pkid_")
-pkid_substrate_threshold: 7
+pkid_substrate_threshold: 10
 pkid_substrate_distance: 25
 pkid_sample_threshold: 15
 pkid_sample_distance: 14
