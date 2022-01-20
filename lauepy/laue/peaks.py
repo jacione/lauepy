@@ -51,11 +51,13 @@ def find_substrate_peaks(config):
     end = time.perf_counter()
     
     if config['verbose']:
+        print()
+        print('### Indexed substrate peaks ###')
         print(f'Min peak distance: {min_dist} pixels')
         print(f'Rel. peak threshold: {config["pkid_substrate_threshold"]}')
         print(f'Abs. peak threshold: {threshold:0.3}')
-        print(f'Number of substrate peaks: {peak_coords.shape[0]}')
-        print(f'time to calculate: {end-start: 0.3} sec')
+        print(f'Number of peaks found: {peak_coords.shape[0]}')
+        print(f'Time to calculate: {end-start: 0.3} sec')
 
     if config['show_plots']:
         plt.figure()
@@ -90,16 +92,22 @@ def find_sample_peaks(config):
     
     img_stack = np.ma.array(img_stack, mask=substrate_mask)
 
-    peak_coords = peak_local_max(img_stack, min_distance=min_dist, threshold_abs=threshold, exclude_border=(3, 10, 10))
+    peak_coords = peak_local_max(img_stack, min_distance=min_dist, threshold_abs=threshold, exclude_border=(1, 10, 10))
     peak_coords = np.rec.fromrecords(peak_coords, names=('frame', 'img_y', 'img_x'))
+    peak_coords = np.sort(peak_coords, order='frame')
 
     np.save(f"{working_dir}/sample_peaks.npy", peak_coords)
 
     end = time.perf_counter()
 
     if config['verbose']:
-        print('Number of sample peaks:', peak_coords.shape[0])
-        print('time to calculate:', end - start, 's')
+        print()
+        print('### Indexed sample peaks ###')
+        print(f'Min peak distance: {min_dist} pixels')
+        print(f'Rel. peak threshold: {config["pkid_sample_threshold"]}')
+        print(f'Abs. peak threshold: {threshold:0.3}')
+        print(f'Number of peaks found: {peak_coords.shape[0]}')
+        print(f'Time to calculate: {end-start: 0.3} sec')
 
     if config['show_plots']:
         plt.imshow(np.max(img_stack, axis=0), vmax=60)
@@ -306,49 +314,42 @@ def group_peaks(input_yml, min_peaks=3, max_peaks=250):
             XYS: List of xys for each group
     """
     print('group peaks')
-    with open(input_yml, 'r') as yml_file:
-        x = json.load(yml_file)
-    scan = x['scan']
-    peak_dict_path = x['peak_dict_path']
-    group_dict_path = x['group_dict_path']
-    spec_file = x['spec_file']
-    plot = x['plot']
+    working_dir = config['working_dir']
+    spec_file = config['spec_file']
+    min_peaks = config['pkgp_min_group_size']
+    max_peaks = config['pkgp_max_group_size']
 
-    with open(peak_dict_path) as f:
-        peak_dict = json.load(f)
-    center_z = [peak_dict[pk]['Center_Frame'] for pk in peak_dict]
+    peak_data = np.load(f'{working_dir}/sample_peaks.npy')
     group_dict = {}
-    d = {'Peak_ID': range(1, len(center_z) + 1), 'Center_Z': center_z}
-    df = pd.DataFrame(data=d)
+    peak_data = pd.DataFrame(peak_data)
 
-    #     df = df.set_index('Peak_ID')
-    groups = df.groupby('Center_Z')['Peak_ID'].apply(list).reset_index(name='Peak_ID')  # group peaks by center z value
-    #     groups1 = df.groupby('Center_Z')['Peak_ID'].apply(list).reset_index(name='ID')
+    # group peaks by frame
+    groups = peak_data.groupby('frame')[''].apply(list).reset_index(name='Peak_ID')
 
     IDS = groups['Peak_ID'].to_list()
-    df = df.groupby('Center_Z').count().reset_index()
+    peak_data = peak_data.groupby('Center_Z').count().reset_index()
 
-    idx_low = df.index[df['Peak_ID'] > min_peaks].to_list()
-    idx_high = df.index[df['Peak_ID'] < max_peaks].to_list()
+    idx_low = peak_data.index[peak_data['Peak_ID'] > min_peaks].to_list()
+    idx_high = peak_data.index[peak_data['Peak_ID'] < max_peaks].to_list()
     idx = [value for value in idx_low if value in idx_high]
 
     #     print(idx)
-    df = df.loc[df['Peak_ID'] > min_peaks]
-    df = df.loc[df['Peak_ID'] < max_peaks]
-    idx = df.index.tolist()
+    peak_data = peak_data.loc[peak_data['Peak_ID'] > min_peaks]
+    peak_data = peak_data.loc[peak_data['Peak_ID'] < max_peaks]
+    idx = peak_data.index.tolist()
     #     print(idx)
     IDS = [IDS[i] for i in idx]
 
     zs = groups['Center_Z'].to_list()
     zs = [zs[i] for i in idx]
     n = len(IDS)
-    spec_vals = extract_spec(spec_file, scan, zs)
+    spec_vals = extract_spec(spec_file, zs)
     for i in range(n):
         group_dict['group_%s' % (i + 1)] = {'Center_Frame': zs[i], 'ID_List': IDS[i], 'phichitheta': spec_vals[i][1],
                                             'Pos': spec_vals[i][0]}
     print('Number of Groups:', len([grp for grp in group_dict]))
-    if plot:
-        IDS = [len(id) for id in IDS]
+    if config['show_plots']:
+        IDS = [len(i) for i in IDS]
         plt.scatter(zs, IDS)
         plt.ylabel('number of peaks')
         plt.xlabel('frame')

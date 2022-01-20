@@ -8,6 +8,7 @@ import json
 import random
 import re
 import subprocess as sub
+import sys
 
 import numpy as np
 from lauepy.rxlibs.xmd34 import geometry as geo
@@ -24,27 +25,25 @@ from lauepy.laue.pflibs import extract_rlv, rot_wcha_modified
 
 class AutoLaue:
 
-    def __init__(self, crystal_path, det_path, sym='Cubic_Sym.npy'):
+    def __init__(self, config):
         # These variables must be defined in self.index()
+        self.config = config
+        self.system = sys.platform
         self.params = None
-        self.times = None
-        self.comb_sub = None
-        self.goodness = None
-        self.system = None
+        self.times = config['laue_times']
+        self.comb_sub = config['laue_comb_sub']
+        self.goodness = config['laue_goodness']
         self.pattern_ID = None
         self.pattern_dict = None
         self.peak_dict = None
         self.group_dict = None
-        self.tolerance = None
-        self.frequency = None
-        self.mis_err = None
+        self.tolerance = config['laue_tolerance']
+        self.frequency = config['laue_frequency']
+        self.mis_err = config['laue_mis_err']
 
         with open(crystal_path) as f:
             crystal_params = json.load(f)
-        with open(det_path) as f:
-            det_params = json.load(f)
-        self.sym = sym
-
+        
         self.find_eul = re.compile(r"EulerAngles\d\s+{\s*(.+)}")
         self.find_gs = re.compile(r"\[\s+\d+]\s+\((.+?)\)")
         self.find_rms = re.compile(r"rms_error\d\s+(.+?)\t")
@@ -60,21 +59,16 @@ class AutoLaue:
         self.space_group = crystal_params['space_group']
         a, b, c, ang1, ang2, ang3 = crystal_params['lattice_params']
         self.latticeParameters = "{ %s, %s, %s, %s, %s, %s }" % (a * 1e9, b * 1e9, c * 1e9, ang1, ang2, ang3)
-        # self.atom_list = [latt.AtomInCell(self.material,*atom_pos) for atom_pos in pos_list]
-        # atom_list = [latt.AtomInCell('Al',*atom_pos) for atom_pos in Al_pos_list] +\
-        #             [latt.AtomInCell('O',*atom_pos) for atom_pos in O_pos_list]
         self.atom_list = [latt.AtomInCell(atom_pos[0], *atom_pos[1]) for atom_pos in pos_list]
         self.xtal = latt.Xtal(a, b, c, ang1, ang2, ang3, atomlist=self.atom_list)
 
-        self.trans_vec = det_params['trans_vec']
-        self.pix_x, self.pix_y, self.pitch_x, self.pitch_y, name = det_params['pixels']
+        self.pix_x, self.pix_y = config['det_pixels']
+        self.pitch_x, self.pitch_y = config['det_pitch']
 
-        self.rot_vec = np.array(det_params['rot_vec'])
-        self.trans_vec = np.array(det_params['trans_vec'])
-        args = det_params['pixels']
-        self.ccd1 = geo.Detector(*args)
+        self.rot_vec = np.array(config['det_rotation'])
+        self.trans_vec = np.array(config['trans_vec'])
+        self.ccd1 = geo.Detector(self.pix_x, self.pix_y, self.pitch_x, self.pitch_y, config['det_name'])
         self.geo_ccd = geo.DetectorGeometry('ccd1', self.ccd1, self.trans_vec, self.rot_vec)
-        self.det_params = det_params['pixels']
 
     def raster_beam(self, microstructure, stepx, stepy, beam_width, beam_height, num_peaks, xs, ys):
         w = beam_width
