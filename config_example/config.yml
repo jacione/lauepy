@@ -7,7 +7,7 @@ xtal_params: /home/beams/CXDUSER/34idc-work/2021/LauePUP1221/Analysis/Transfer_t
 det_params: /home/beams/CXDUSER/34idc-work/2021/LauePUP1221/Analysis/Transfer_to_Sayre_1208/Detector_Parameters/eiger_params_LauePUP1221_1208_X40Z5.json'
 
 ### General parameters
-show_plots: true
+show_plots: false
 verbose: true
 
 ### Image prep parameters (all start with "prep_")

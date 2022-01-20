@@ -91,12 +91,7 @@ def find_sample_peaks(config):
     img_stack = np.ma.array(img_stack, mask=substrate_mask)
 
     peak_coords = peak_local_max(img_stack, min_distance=min_dist, threshold_abs=threshold, exclude_border=(3, 10, 10))
-
-    sample_xyz = ut.read_spec_log(config, 'Lab_X', 'Lab_Y', 'Lab_Z')
-
-    peak_coords = np.column_stack((sample_xyz[peak_coords[:, 0]], peak_coords))
-
-    peak_coords = np.rec.fromrecords(peak_coords, names=('lab_x', 'lab_y', 'lab_z', 'frame', 'img_y', 'img_x'))
+    peak_coords = np.rec.fromrecords(peak_coords, names=('frame', 'img_y', 'img_x'))
 
     np.save(f"{working_dir}/sample_peaks.npy", peak_coords)
 
@@ -109,15 +104,6 @@ def find_sample_peaks(config):
     if config['show_plots']:
         plt.imshow(np.max(img_stack, axis=0), vmax=60)
         plt.scatter(peak_coords['img_x'], peak_coords['img_y'], edgecolor='red', facecolor='None', s=160)
-        plt.figure()
-        num_x = np.unique(peak_coords.lab_x).shape[0]
-        num_z = np.unique(peak_coords.lab_z).shape[0]
-        if num_z > 1:
-            plt.hist2d(peak_coords.lab_x, peak_coords.lab_z, (num_x, num_z), cmap=plt.cm.jet)
-            plt.colorbar()
-        else:
-            plt.hist(peak_coords.lab_x, num_x)
-        print()
         plt.show()
 
     return
