@@ -337,10 +337,6 @@ class AutoLaue:
 
             for patt in reduced_o_list:
                 rms, goodness, dist_loss, num_peaks, rmat, spec_ori, xys, conf = patt
-                #                 ids = list(ids)
-                #                 for i in ids:
-                #                     self.peak_dict['peak_%s'%i]['Pattern_ID'] = 'pattern_%s'%self.pattern_ID
-
                 blah = np.array([len(xys) for _ in xys])
 
                 self.pattern_dict['pattern_%d' % self.pattern_ID] = {'Rot_mat': rmat.tolist(),

@@ -3,10 +3,11 @@ scan: 516
 year: 2021
 exp_id: LauePUP1221
 alt_id: ""
-crystal: Al203
 
 ### General parameters
-show_plots: false
+substrate: Al2O3
+sample: Au
+show_plots: true
 verbose: true
 
 ### Image prep parameters (all start with "prep_")

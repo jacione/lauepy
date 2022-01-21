@@ -297,7 +297,7 @@ def isolate_peaks(input_yml, substrate_sim_peak_dict, distance=5):
     return
 
 
-def group_peaks(input_yml, min_peaks=3, max_peaks=250):
+def group_peaks(config):
     """ 
     This function groups peaks by the z values of their centers of mass. Peaks that 
     are centered on the same frame will be in roughly the same location. After this,
@@ -319,43 +319,47 @@ def group_peaks(input_yml, min_peaks=3, max_peaks=250):
     min_peaks = config['pkgp_min_group_size']
     max_peaks = config['pkgp_max_group_size']
 
-    peak_data = np.load(f'{working_dir}/sample_peaks.npy')
+    raw_data = np.load(f'{working_dir}/sample_peaks.npy')
     group_dict = {}
-    peak_data = pd.DataFrame(peak_data)
+    peak_data = pd.DataFrame(raw_data).reset_index()
 
     # group peaks by frame
-    groups = peak_data.groupby('frame')[''].apply(list).reset_index(name='Peak_ID')
+    groups = peak_data.groupby('frame')['index'].apply(list).reset_index()
 
-    IDS = groups['Peak_ID'].to_list()
-    peak_data = peak_data.groupby('Center_Z').count().reset_index()
+    IDS = groups['index'].to_list()
+    peak_data = peak_data.groupby('frame').count().reset_index()
 
-    idx_low = peak_data.index[peak_data['Peak_ID'] > min_peaks].to_list()
-    idx_high = peak_data.index[peak_data['Peak_ID'] < max_peaks].to_list()
+    idx_low = peak_data.index[peak_data['index'] > min_peaks].to_list()
+    idx_high = peak_data.index[peak_data['index'] < max_peaks].to_list()
     idx = [value for value in idx_low if value in idx_high]
 
     #     print(idx)
-    peak_data = peak_data.loc[peak_data['Peak_ID'] > min_peaks]
-    peak_data = peak_data.loc[peak_data['Peak_ID'] < max_peaks]
+    peak_data = peak_data.loc[peak_data['index'] > min_peaks]
+    peak_data = peak_data.loc[peak_data['index'] < max_peaks]
     idx = peak_data.index.tolist()
     #     print(idx)
     IDS = [IDS[i] for i in idx]
 
-    zs = groups['Center_Z'].to_list()
-    zs = [zs[i] for i in idx]
-    n = len(IDS)
-    spec_vals = extract_spec(spec_file, zs)
-    for i in range(n):
-        group_dict['group_%s' % (i + 1)] = {'Center_Frame': zs[i], 'ID_List': IDS[i], 'phichitheta': spec_vals[i][1],
-                                            'Pos': spec_vals[i][0]}
-    print('Number of Groups:', len([grp for grp in group_dict]))
+    frames = groups['frame'].to_list()
+    frames = [frames[i] for i in idx]
+    spec_positions = ut.read_spec_log(config, 'Lab_X', 'Lab_Y', 'Lab_Z')
+    spec_angles = ut.read_spec_init(config, 'Phi', 'Chi', 'Theta')
+    
+    for i, frame in enumerate(frames):
+        group_dict[f'group_{i + 1}'] = {'Center_Frame': frame,
+                                        'ID_List': IDS[i],
+                                        'phichitheta': spec_angles.tolist(),
+                                        'Pos': spec_positions[frame].tolist()
+                                       }
+    print('Number of Groups:', len(group_dict))
     if config['show_plots']:
         IDS = [len(i) for i in IDS]
-        plt.scatter(zs, IDS)
+        plt.scatter(frames, IDS)
         plt.ylabel('number of peaks')
         plt.xlabel('frame')
         plt.show()
 
-    with open(group_dict_path, 'w') as json_file:
+    with open(f'{working_dir}/grouped_sample_peaks.json', 'w') as json_file:
         json.dump(group_dict, json_file)
     return
 
