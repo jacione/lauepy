@@ -74,7 +74,7 @@ def read_spec_log(config, *keys):
     return arr
 
 
-def read_spec_init(config, key):
+def read_spec_init(config, *keys):
     """
     Reads the initial position of a single motor for a single scan.
 
@@ -86,7 +86,10 @@ def read_spec_init(config, key):
     :rtype: float
     """
     scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
-    return scan.init_motor_pos[f'INIT_MOPO_{key}']
+    if len(keys) == 1:
+        return scan.init_motor_pos[f'INIT_MOPO_{keys[0]}']
+    else:
+        return [scan.init_motor_pos[f'INIT_MOPO_{key}'] for key in keys]
 
 
 def purge(config):
