@@ -9,7 +9,7 @@ def main(config):
     config = ut.read_config(config)
     pk.find_substrate_peaks(config)
     pk.find_sample_peaks(config)
-    pass
+    pk.group_peaks(config)
 
 
 if __name__ == '__main__':
