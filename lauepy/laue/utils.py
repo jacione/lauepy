@@ -43,7 +43,7 @@ def read_config(yml_file):
         raise FileNotFoundError('Could not find the specified SPEC FILE. Check config')
 
     id_dir = Path(cfg['working_dir'])
-    for subdir in ['', 'clean_images', 'peaks', 'groups', 'grains']:
+    for subdir in ['', 'clean_images', 'peaks', 'substrate', 'groups', 'grains']:
         d = id_dir / subdir
         if not d.exists():
             d.mkdir(parents=True)
@@ -82,8 +82,8 @@ def read_spec_init(config, *keys):
 
     :param config: configuration dictionary
     :type config: dict
-    :param key: motor name
-    :type key: str
+    :param keys: motor name
+    :type keys: str
     :return: initial motor position
     :rtype: float
     """
