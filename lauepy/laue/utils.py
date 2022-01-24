@@ -43,8 +43,10 @@ def read_config(yml_file):
         raise FileNotFoundError('Could not find the specified SPEC FILE. Check config')
 
     id_dir = Path(cfg['working_dir'])
-    if not id_dir.exists():
-        id_dir.mkdir(parents=True)
+    for subdir in ['', 'clean_images', 'peaks', 'groups', 'grains']:
+        d = id_dir / subdir
+        if not d.exists():
+            d.mkdir(parents=True)
 
     return cfg
 
