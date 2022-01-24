@@ -89,9 +89,10 @@ def read_spec_init(config, *keys):
     """
     scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
     if len(keys) == 1:
-        return scan.init_motor_pos[f'INIT_MOPO_{keys[0]}']
+        ret = scan.init_motor_pos[f'INIT_MOPO_{keys[0]}']
     else:
-        return [scan.init_motor_pos[f'INIT_MOPO_{key}'] for key in keys]
+        ret = [scan.init_motor_pos[f'INIT_MOPO_{key}'] for key in keys]
+    return np.array(ret)
 
 
 def purge(config):
