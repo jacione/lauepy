@@ -29,27 +29,27 @@ def find_substrate_peaks(config):
     Find the coordinates of peaks in the substrate-only Laue image
     """
     start = time.perf_counter()
-    
+
     working_dir = config['working_dir']
 
     img = tifffile.imread(f'{working_dir}/substrate_peaks.tiff')
     img = ndi.median_filter(img, size=2)
-    
+
     threshold = np.mean(img) * config['pkid_substrate_threshold']
     min_dist = config['pkid_substrate_distance']
-    
+
     peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
     peak_coords = np.fliplr(peak_coords)
-    
-    np.save(f"{working_dir}/substrate_peaks.npy", peak_coords)
-    
+
+    np.save(f"{working_dir}/substrate/peaks.npy", peak_coords)
+
     structure = np.zeros((15, 15))
     structure[draw.disk((7, 7), 5.5)] = 1
     sub_mask = ndi.binary_dilation(img > threshold, structure=structure)
-    np.save(f"{working_dir}/substrate_mask.npy", np.array([sub_mask]))
+    np.save(f"{working_dir}/substrate/mask.npy", np.array([sub_mask]))
 
     end = time.perf_counter()
-    
+
     if config['verbose']:
         print()
         print('### Indexed substrate peaks ###')
@@ -78,25 +78,25 @@ def find_sample_peaks(config):
 
     files = sorted(Path(f"{working_dir}/clean_images").iterdir())
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
-    
+
     threshold = np.mean(img_stack) * config['pkid_sample_threshold']
     min_dist = config['pkid_sample_distance']
 
     # Load the mask from the substrate
     try:
-        substrate_mask = np.load(f"{working_dir}/substrate_mask.npy")
+        substrate_mask = np.load(f"{working_dir}/substrate/mask.npy")
     except FileNotFoundError:
         find_substrate_peaks(config)
-        substrate_mask = np.load(f"{working_dir}/substrate_mask.npy")
+        substrate_mask = np.load(f"{working_dir}/substrate/mask.npy")
     substrate_mask = np.repeat(substrate_mask, img_stack.shape[0], axis=0)
-    
+
     img_stack = np.ma.array(img_stack, mask=substrate_mask)
 
     peak_coords = peak_local_max(img_stack, min_distance=min_dist, threshold_abs=threshold, exclude_border=(1, 10, 10))
     peak_coords = np.rec.fromrecords(peak_coords, names=('frame', 'img_y', 'img_x'))
     peak_coords = np.sort(peak_coords, order='frame')
 
-    np.save(f"{working_dir}/sample_peaks.npy", peak_coords)
+    np.save(f"{working_dir}/peaks/sample_peaks.npy", peak_coords)
 
     end = time.perf_counter()
 
@@ -315,52 +315,31 @@ def group_peaks(config):
     """
     print('group peaks')
     working_dir = config['working_dir']
-    spec_file = config['spec_file']
     min_peaks = config['pkgp_min_group_size']
     max_peaks = config['pkgp_max_group_size']
 
-    raw_data = np.load(f'{working_dir}/sample_peaks.npy')
-    group_dict = {}
-    peak_data = pd.DataFrame(raw_data).reset_index()
+    raw_data = np.load(f'{working_dir}/peaks/sample_peaks.npy')
+    spec_positions = ut.read_spec_log(config, 'Lab_X', 'Lab_Y', 'Lab_Z', 'Phi', 'Chi', 'Theta')
 
-    # group peaks by frame
-    groups = peak_data.groupby('frame')['index'].apply(list).reset_index()
-
-    IDS = groups['index'].to_list()
-    peak_data = peak_data.groupby('frame').count().reset_index()
-
-    idx_low = peak_data.index[peak_data['index'] > min_peaks].to_list()
-    idx_high = peak_data.index[peak_data['index'] < max_peaks].to_list()
-    idx = [value for value in idx_low if value in idx_high]
-
-    #     print(idx)
-    peak_data = peak_data.loc[peak_data['index'] > min_peaks]
-    peak_data = peak_data.loc[peak_data['index'] < max_peaks]
-    idx = peak_data.index.tolist()
-    #     print(idx)
-    IDS = [IDS[i] for i in idx]
-
-    frames = groups['frame'].to_list()
-    frames = [frames[i] for i in idx]
-    spec_positions = ut.read_spec_log(config, 'Lab_X', 'Lab_Y', 'Lab_Z')
-    spec_angles = ut.read_spec_init(config, 'Phi', 'Chi', 'Theta')
-    
+    frames = np.unique(raw_data['frame'])
+    group_info = np.zeros((len(frames), 8))  # frame, num_peaks, and the six spec positions
     for i, frame in enumerate(frames):
-        group_dict[f'group_{i + 1}'] = {'Center_Frame': frame,
-                                        'ID_List': IDS[i],
-                                        'phichitheta': spec_angles.tolist(),
-                                        'Pos': spec_positions[frame].tolist()
-                                       }
-    print('Number of Groups:', len(group_dict))
+        selection = raw_data['frame'] == frame
+        group_info[i] = np.array([frame, np.sum(selection), *spec_positions[frame]])
+        if min_peaks < np.sum(selection) < max_peaks:
+            coords = np.column_stack((raw_data['img_x'], raw_data['img_y']))[selection]
+            np.save(f'{working_dir}/groups/group_{i:04}.npy', coords)
+
+    group_info = np.rec.fromrecords(group_info,
+                                    names=('frame', 'num_peaks', 'Lab_X', 'Lab_Y', 'Lab_Z', 'Phi', 'Chi', 'Theta'))
+    np.save(f'{working_dir}/groups/group_info.npy', group_info)
+
+    print('Number of Groups:', len(frames))
     if config['show_plots']:
-        IDS = [len(i) for i in IDS]
-        plt.scatter(frames, IDS)
+        plt.scatter(group_info['frame'], group_info['num_peaks'])
         plt.ylabel('number of peaks')
         plt.xlabel('frame')
         plt.show()
-
-    with open(f'{working_dir}/grouped_sample_peaks.json', 'w') as json_file:
-        json.dump(group_dict, json_file)
     return
 
 
