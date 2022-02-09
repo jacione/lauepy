@@ -9,18 +9,29 @@ import random
 import re
 import subprocess as sub
 import sys
+from pathlib import Path
 
 import numpy as np
-from lauepy.rxlibs.xmd34 import geometry as geo
-from lauepy.rxlibs.xmd34 import lattice as latt
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
 
-import lauepy.laue.rlv_to_spec as so
 import lauepy.laue.forward_sim as fsim
+import lauepy.laue.peaks as pk
+import lauepy.laue.rlv_to_spec as so
 from lauepy.laue.disorientation import calc_disorient, rmat_2_quat
 from lauepy.laue.pflibs import extract_rlv, rot_wcha_modified
+from lauepy.rxlibs.xmd34 import geometry as geo
+from lauepy.rxlibs.xmd34 import lattice as latt
+
+find_eul = re.compile(r"EulerAngles\d\s+{\s*(.+)}")
+find_gs = re.compile(r"\[\s+\d+]\s+\((.+?)\)")
+find_rms = re.compile(r"rms_error\d\s+(.+?)\t")
+find_goodness = re.compile(r"[$]goodness\d\t+(\d+.*\d+)\t")
+find_cols = re.compile(r"{(.+?)}")
+find_rlv = re.compile(r"recip_lattice\d\s+{(.+)}")
+find_rmat = re.compile(r"[$]rotation_matrix\d\t+{(.+)}")
+find_hkls = re.compile(r"\[\s+\d+]\s+\(.+?\)\s+\((.+?)\)")
 
 
 class AutoLaue:
@@ -29,46 +40,51 @@ class AutoLaue:
         # These variables must be defined in self.index()
         self.config = config
         self.system = sys.platform
-        self.params = None
-        self.times = config['laue_times']
-        self.comb_sub = config['laue_comb_sub']
-        self.goodness = config['laue_goodness']
+        self.working_dir = config['working_dir']
+        self.peak_dict = pk.load_peaks(config)
+        self.phichitheta = self.peak_dict['info']['angles']
+
+        self.times = None
+        self.comb_sub = None
+        self.goodness = None
         self.pattern_ID = None
         self.pattern_dict = None
-        self.peak_dict = None
-        self.group_dict = None
-        self.tolerance = config['laue_tolerance']
-        self.frequency = config['laue_frequency']
-        self.mis_err = config['laue_mis_err']
-
-        with open(crystal_path) as f:
-            crystal_params = json.load(f)
-        
-        self.find_eul = re.compile(r"EulerAngles\d\s+{\s*(.+)}")
-        self.find_gs = re.compile(r"\[\s+\d+]\s+\((.+?)\)")
-        self.find_rms = re.compile(r"rms_error\d\s+(.+?)\t")
-        self.find_goodness = re.compile(r"[$]goodness\d\t+(\d+.*\d+)\t")
-        self.find_cols = re.compile(r"{(.+?)}")
-        self.find_rlv = re.compile(r"recip_lattice\d\s+{(.+)}")
-        self.find_cols = re.compile(r"{(.+?)}")
-        self.find_rmat = re.compile(r"[$]rotation_matrix\d\t+{(.+)}")
-        self.find_hkls = re.compile(r"\[\s+\d+]\s+\(.+?\)\s+\((.+?)\)")
-        pos_list = crystal_params['pos_list']
-        self.material = crystal_params['material']
-
-        self.space_group = crystal_params['space_group']
-        a, b, c, ang1, ang2, ang3 = crystal_params['lattice_params']
-        self.latticeParameters = "{ %s, %s, %s, %s, %s, %s }" % (a * 1e9, b * 1e9, c * 1e9, ang1, ang2, ang3)
-        self.atom_list = [latt.AtomInCell(atom_pos[0], *atom_pos[1]) for atom_pos in pos_list]
-        self.xtal = latt.Xtal(a, b, c, ang1, ang2, ang3, atomlist=self.atom_list)
+        self.tolerance = None
+        self.frequency = None
+        self.mis_err = None
+        self.material = None
+        self.space_group = None
+        self.lattice_params = None
+        self.atom_list = None
+        self.xtal = None
 
         self.pix_x, self.pix_y = config['det_pixels']
         self.pitch_x, self.pitch_y = config['det_pitch']
-
-        self.rot_vec = np.array(config['det_rotation'])
-        self.trans_vec = np.array(config['trans_vec'])
+        self.det_rotation = np.array(config['det_rotation'])
+        self.det_translation = np.array(config['det_translation'])
         self.ccd1 = geo.Detector(self.pix_x, self.pix_y, self.pitch_x, self.pitch_y, config['det_name'])
-        self.geo_ccd = geo.DetectorGeometry('ccd1', self.ccd1, self.trans_vec, self.rot_vec)
+        self.geo_ccd = geo.DetectorGeometry('ccd1', self.ccd1, self.det_translation, self.det_rotation)
+
+    def set_params(self, substrate=False):
+        name = 'sample'
+        if substrate:
+            name = 'substrate'
+
+        self.times = self.config[f'laue_{name}_times']
+        self.comb_sub = self.config[f'laue_{name}_comb_sub']
+        self.goodness = self.config[f'laue_{name}_goodness']
+        self.tolerance = self.config[f'laue_{name}_tolerance']
+        self.frequency = self.config[f'laue_{name}_frequency']
+        self.mis_err = self.config[f'laue_{name}_mis_err']
+        with open(Path(__file__).resolve().parents[1] / f'crystals/{self.config[name]}.json') as f:
+            xtal_params = json.load(f)
+
+        self.material = xtal_params['material']
+        self.space_group = xtal_params['space_group']
+        a, b, c, ang1, ang2, ang3 = xtal_params['lattice_params']
+        self.lattice_params = f"{{ {a*1e9}, {b*1e9}, {c*1e9}, {ang1}, {ang2}, {ang3} }}"
+        self.atom_list = [latt.AtomInCell(atom_pos[0], *atom_pos[1]) for atom_pos in xtal_params['pos_list']]
+        self.xtal = latt.Xtal(a, b, c, ang1, ang2, ang3, atomlist=self.atom_list)
 
     def raster_beam(self, microstructure, stepx, stepy, beam_width, beam_height, num_peaks, xs, ys):
         w = beam_width
@@ -106,18 +122,12 @@ class AutoLaue:
         return stack, beam_rast, grain_list, locations
 
     def calc_gs(self):
-        theta = np.sqrt(
-            self.rot_vec[0] * self.rot_vec[0] + self.rot_vec[1] * self.rot_vec[1] + self.rot_vec[2] * self.rot_vec[2])
+        theta = np.sqrt(self.det_rotation[0]**2 + self.det_rotation[1]**2 + self.det_rotation[2]**2)
         c = np.cos(theta)
         s = np.sin(theta)
         c1 = 1 - c
-        Rx = self.rot_vec[0]
-        Ry = self.rot_vec[1]
-        Rz = self.rot_vec[2]
-        Rx /= theta
-        Ry /= theta
-        Rz /= theta
-        # print(Rx,Ry,Rz)
+        Rx, Ry, Rz = self.det_rotation / theta
+        # TODO could this possibly be vectorized?
         rho00 = c + Rx * Rx * c1
         rho01 = Rx * Ry * c1 - Rz * s
         rho02 = Ry * s + Rx * Rz * c1
@@ -127,38 +137,34 @@ class AutoLaue:
         rho20 = -Ry * s + Rx * Rz * c1
         rho21 = Rx * s + Ry * Rz * c1
         rho22 = c + Rz * Rz * c1
-        for peak in self.peak_dict:
-            peak_xy = self.peak_dict[peak]['XY']
-            # start calculating the g-vectors below ###################################
-            px = peak_xy[0]
-            py = peak_xy[1]
+        for frame_data in self.peak_dict.values():
+            if 'coords' not in frame_data.keys():
+                continue
+            for coords in frame_data['coords']:
+                px, py = coords
+                # start calculating the g-vectors below ###################################
+                xd = (px - 0.5 * (self.pix_x - 1)) * self.pitch_x
+                yd = (py - 0.5 * (self.pix_y - 1)) * self.pitch_y
+                zd = 0
+                # translate (xd,yd) by the vector P to get (xd,yd,zd)
+                x, y, z = xd + self.det_translation[0], yd + self.det_translation[1], zd + self.det_translation[2]
+                # rotate about R
+                X = rho00 * x + rho01 * y + rho02 * z
+                Y = rho10 * x + rho11 * y + rho12 * z
+                Z = rho20 * x + rho21 * y + rho22 * z
+                # normalize
+                total = np.sqrt(X ** 2 + Y ** 2 + Z ** 2)
+                x_lab, y_lab, z_lab = X / total, Y / total, Z / total
 
-            #             sizeX = 28.2/516
-            #             sizeY = 28.2/517
-            #             xd = (px - 0.5*(self.pix_x -1))*sizeX
-            #             yd = (py - 0.5*(self.pix_y -1))*sizeY
-            xd = (px - 0.5 * (self.pix_x - 1)) * self.pitch_x
-            yd = (py - 0.5 * (self.pix_y - 1)) * self.pitch_y
-            zd = 0
-            # translate (xd,yd) by the vector P to get (xd,yd,zd)
-            x, y, z = xd + self.trans_vec[0], yd + self.trans_vec[1], zd + self.trans_vec[2]
-            # rotate about R
-            X = rho00 * x + rho01 * y + rho02 * z
-            Y = rho10 * x + rho11 * y + rho12 * z
-            Z = rho20 * x + rho21 * y + rho22 * z
-            # normalize
-            total = np.sqrt(X ** 2 + Y ** 2 + Z ** 2)
-            x_lab, y_lab, z_lab = X / total, Y / total, Z / total
+                # normalize qhat
+                q_x, q_y, q_z = x_lab, y_lab, z_lab - 1
+                total_qhat = np.sqrt(q_x ** 2 + q_y ** 2 + q_z ** 2)
+                q_x = q_x / total_qhat
+                q_y = q_y / total_qhat
+                q_z = q_z / total_qhat
 
-            # normalize qhat
-            q_x, q_y, q_z = x_lab, y_lab, z_lab - 1
-            total_qhat = np.sqrt(q_x ** 2 + q_y ** 2 + q_z ** 2)
-            q_x = q_x / total_qhat
-            q_y = q_y / total_qhat
-            q_z = q_z / total_qhat
-
-            self.peak_dict[peak]['G_Vector'] = (q_x, q_y, q_z)
-
+                frame_data['G_vectors'] = (q_x, q_y, q_z)
+        pk.save_peaks(self.config, self.peak_dict)
         return
 
     def write_mat_params(self, intensities, gvectors, ID):
@@ -177,7 +183,7 @@ class AutoLaue:
                 if s.startswith("$structureDesc"):
                     peak_file.write("$structureDesc		%s\n" % self.material)
                 if s.startswith("$latticeParameters"):
-                    peak_file.write("$latticeParameters	%s	// 2006, CODATA\n" % self.latticeParameters)
+                    peak_file.write("$latticeParameters	%s	// 2006, CODATA\n" % self.lattice_params)
                 if s.startswith("$SpaceGroup"):
                     peak_file.write(
                         "$SpaceGroup			%s					// Space Group number from International\n" % self.space_group)
@@ -210,57 +216,56 @@ class AutoLaue:
         return ind
 
     def extract_vals(self):
-        file_name = open("Index.txt").read()
-        file_split = re.split("[$]pattern\d", file_name)[1:]
+        with open("Index.txt") as f:
+            file_split = re.split("[$]pattern\d", f.read())[1:]
         found_patts = []
 
         for patt in file_split[:6]:
 
-            goodness = np.round(float(self.find_goodness.findall(patt)[0]), 2)
+            goodness = np.round(float(find_goodness.findall(patt)[0]), 2)
 
             if goodness > self.goodness:
-                cols = self.find_cols.findall(self.find_rlv.findall(patt)[0])
+                cols = find_cols.findall(find_rlv.findall(patt)[0])
                 vals = [m.split(',') for m in cols]
                 rlv = np.array([[float(v) for v in x] for x in vals]).T
-                rms = float(self.find_rms.findall(patt)[0])
+                rms = float(find_rms.findall(patt)[0])
 
-                hkls = self.find_hkls.findall(patt)
+                hkls = find_hkls.findall(patt)
                 hkls = [[int(k) for k in hkl.split()] for hkl in hkls]
 
-                cols = self.find_cols.findall(self.find_rmat.findall(patt)[0])
+                cols = find_cols.findall(find_rmat.findall(patt)[0])
                 vals = [m.split(',') for m in cols]
                 rmat = np.array([[float(v) for v in x] for x in vals])
 
-                gs = self.find_gs.findall(patt)
+                gs = find_gs.findall(patt)
                 gs = [[float(k) for k in g.split()] for g in gs]
 
                 found_patts.append([hkls, gs, rmat, rlv, goodness, rms])
 
         return found_patts
 
-    def orientation_counter(self, group):
-        all_peakIDs = self.group_dict[group]['ID_List']
-        n = len(all_peakIDs)
+    def orientation_counter(self, frame_data):
+        peak_coords = np.array(frame_data['coords'])
+        num_peaks = peak_coords.shape[0]
 
-        if (n - 10) <= self.comb_sub:
-            r = n
+        # FIXME are these magic numbers?
+        if (num_peaks - 10) <= self.comb_sub:
+            r = num_peaks
             size = 1
-        elif n < 7:
-            r = n
+        elif num_peaks < 7:
+            r = num_peaks
             size = 1
         else:
-            r = n - self.comb_sub
+            r = num_peaks - self.comb_sub
             size = self.times
 
-        indices = [random.sample(range(n), r) for time in range(size)]
-        print("%s combinations containing %s peaks" % (size, r))
+        indices = [random.sample(range(num_peaks), r) for _ in range(size)]
+        print(f"{size} random combinations containing {r} peaks")
 
         reduced_list = []
         count_index = 0
         for ind in indices:
-            peakIDs = [all_peakIDs[i] for i in ind]
-
-            gvectors = [self.peak_dict['peak_%s' % i]['G_Vector'] for i in peakIDs]
+            gvectors = np.array(frame_data['G_vectors'])[ind]
 
             self.write_mat_params(np.ones(len(gvectors)), gvectors, count_index)
             count_index += 1
@@ -270,13 +275,12 @@ class AutoLaue:
             ### 
             for patts in found_patts:
                 hkls, gs, rmat, rlv, goodness, rms = patts
-                phi, chi, theta = self.params
+                phi, chi, theta = self.phichitheta
                 spec_ori = so.transform(rlv, phi, chi, theta)
-                ids = np.array([peakIDs[self.indx(g, gvectors)] for g in gs])
+                ids = np.array([self.indx(g, gvectors) for g in gs])
                 rtm1 = rmat
 
-                dist_loss, xys = self.loss_function_distance(rmat.T,
-                                                             [self.peak_dict['peak_%s' % ID]['XY'] for ID in ids], hkls)
+                dist_loss, xys = self.loss_function_distance(rmat.T, peak_coords[ids], hkls)
 
                 No = True
                 if len(reduced_list) != 0:
@@ -308,62 +312,49 @@ class AutoLaue:
         reduced_list = [reduced_list[i] for i in list(good_ind[0])]
         return reduced_list
 
-    def index(self, param_path, substrate=False):
-        with open(param_path) as f:
-            params = json.load(f)
-        self.times = params['times']
-        self.comb_sub = params['comb_sub']
-        self.goodness = params['goodness']
-        self.system = params['system']
-
+    def index(self, params, substrate=False):
+        self.set_params(substrate)
         self.pattern_ID = 1
         self.pattern_dict = {}
-        with open(params['peak_dict']) as f:
-            self.peak_dict = json.load(f)
-        with open(params['group_dict']) as f:
-            self.group_dict = json.load(f)
 
-        self.tolerance = params['tolerance']
-        self.frequency = params['frequency']
-        self.mis_err = params['mis_err']
         self.calc_gs()
         count = 0
 
-        for group in self.group_dict:
-            print('Frame', self.group_dict[group]['Center_Frame'])
+        for frame, frame_data in self.peak_dict.items():
+            if frame.startswith('frame_'):
+                i = int(frame[-3:])  # The frame number should be the last 3 characters in the dictionary key
+                print(f'Indexing frame {i}')
+            elif frame == 'substrate':
+                i = -1
+                print('Indexing substrate')
+            else:
+                continue
             count += 1
-            self.params = self.group_dict[group]['phichitheta']
-            reduced_o_list = self.orientation_counter(group)
+            reduced_o_list = self.orientation_counter(frame_data)
 
             for patt in reduced_o_list:
                 rms, goodness, dist_loss, num_peaks, rmat, spec_ori, xys, conf = patt
                 blah = np.array([len(xys) for _ in xys])
 
-                self.pattern_dict['pattern_%d' % self.pattern_ID] = {'Rot_mat': rmat.tolist(),
-                                                                     'Goodness': float(np.mean(goodness)),
-                                                                     'Dist': float(np.mean(dist_loss)),
-                                                                     'Spec_Orientation': [s.tolist() for s in spec_ori],
-                                                                     'Center_Frame': self.group_dict[group][
-                                                                         'Center_Frame'],
-                                                                     'Count': conf,
-                                                                     'RMS': float(np.mean(rms)),
-                                                                     'Num_Peaks': float(np.mean(num_peaks)),
-                                                                     'Pos': self.group_dict[group]['Pos'],
-                                                                     'xys': xys[np.argmax(blah)]}
+                self.pattern_dict[f'pattern_{self.pattern_ID}'] = {
+                    'Rot_mat': rmat.tolist(),
+                    'Goodness': float(np.mean(goodness)),
+                    'Dist': float(np.mean(dist_loss)),
+                    'Spec_Orientation': [s.tolist() for s in spec_ori],
+                    'Center_Frame': i,
+                    'Count': conf,
+                    'RMS': float(np.mean(rms)),
+                    'Num_Peaks': float(np.mean(num_peaks)),
+                    'Pos': frame_data['lab_xyz'],
+                    'xys': xys[np.argmax(blah)]
+                }
 
                 self.pattern_ID += 1
-        if not substrate:
-            with open(params['peak_dict'], 'w') as json_file:
-                json.dump(self.peak_dict, json_file)
+        with open(params['peak_dict'], 'w') as json_file:
+            json.dump(self.peak_dict, json_file)
 
-            with open(params['pattern_dict'], 'w') as json_file:
-                json.dump(self.pattern_dict, json_file)
-        else:
-            with open(params['peak_dict'], 'w') as json_file:
-                json.dump(self.peak_dict, json_file)
-
-            with open(params['pattern_dict'], 'w') as json_file:
-                json.dump(self.pattern_dict, json_file)
+        with open(params['pattern_dict'], 'w') as json_file:
+            json.dump(self.pattern_dict, json_file)
         return
 
     def loss_function_distance(self, xtal_rmat, xy_exp, hkl_labels):
@@ -414,7 +405,6 @@ class AutoLaue:
 
     @staticmethod
     def extract_rlv():
-        find_rlv = re.compile(r"recip_lattice\d\s+{(.+)}")
         file_name = open("./Index.txt").read()
         file_split = re.split("[$]pattern\d", file_name)[1:]
 

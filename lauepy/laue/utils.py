@@ -85,7 +85,7 @@ def read_spec_init(config, *keys):
     :param keys: motor name
     :type keys: str
     :return: initial motor position
-    :rtype: float
+    :rtype: ndarray
     """
     scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
     if len(keys) == 1:

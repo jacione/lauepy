@@ -128,16 +128,15 @@ def find_sample_peaks(config, peak_dict):
 
 
 def record_positions(config, peak_dict):
-    phi, chi, theta = ut.read_spec_init(config, 'Phi', 'Chi', 'Theta')
-    peak_dict['angles'] = {'phi': phi, 'chi': chi, 'theta': theta}
-
     spec_positions = ut.read_spec_log(config, 'Lab_X', 'Lab_Y', 'Lab_Z')
+
     for frame, frame_data in peak_dict.items():
-        try:
-            i = int(frame[-3:])  # The frame number should be the last 3 characters in the dictionary key
-        except ValueError:
-            continue  # keys that don't correspond to frames should skip this part
-        frame_data['lab_xyz'] = list(spec_positions[i])
+        if frame.startswith('frame_'):
+            frame_data['lab_xyz'] = list(spec_positions[int(frame[-3:])])
+        elif frame == 'substrate':
+            frame_data['lab_xyz'] = [0, 0, 0]
+
+    peak_dict['info'] = {'angles': ut.read_spec_init(config, 'Phi', 'Chi', 'Theta').tolist()}
     return peak_dict
 
 
