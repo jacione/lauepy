@@ -7,14 +7,11 @@ from collections import Counter
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from matplotlib.animation import ArtistAnimation
 import numpy as np
-import pandas as pd
 import scipy.ndimage as ndi
 import tifffile
 from scipy.ndimage.measurements import label, center_of_mass
 from scipy.spatial.distance import cdist
-from scipy.stats import gaussian_kde
 from skimage.feature import peak_local_max
 from skimage import draw
 
@@ -41,7 +38,9 @@ def find_substrate_peaks(config):
     peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
     peak_coords = np.fliplr(peak_coords)
 
-    np.save(f"{working_dir}/substrate/peaks.npy", peak_coords)
+    peak_dict = {f'peak_{i}': coords for i, coords in enumerate(peak_coords)}
+    with open(f"{working_dir}/substrate/peaks.json", 'w') as f:
+        json.dump(peak_dict, f)
 
     structure = np.zeros((15, 15))
     structure[draw.disk((7, 7), 5.5)] = 1
@@ -91,14 +90,23 @@ def find_sample_peaks(config):
     substrate_mask = np.repeat(substrate_mask, img_stack.shape[0], axis=0)
 
     img_stack = np.ma.array(img_stack, mask=substrate_mask)
+    spec_positions = ut.read_spec_log(config, 'Lab_X', 'Lab_Y', 'Lab_Z', 'Phi', 'Chi', 'Theta')
+    peak_dict = {}
 
-    peak_coords = peak_local_max(img_stack, min_distance=min_dist, threshold_abs=threshold, exclude_border=(1, 10, 10))
-    peak_coords = np.rec.fromrecords(peak_coords, names=('frame', 'img_y', 'img_x'))
-    peak_coords = np.sort(peak_coords, order='frame')
+    for frame, img in enumerate(img_stack):
+        frame_data = {key: spec_positions[key][frame] for key in spec_positions.dtype.names}
+        peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=(10, 10))
+        frame_data['coords'] = list(np.fliplr(peak_coords))
+        frame_data['num_peaks'] = len(peak_coords)
+        peak_dict[f'frame_{frame:03}'] = frame_data
 
-    np.save(f"{working_dir}/peaks/sample_peaks.npy", peak_coords)
+    with open(f"{working_dir}/peaks/sample_peaks.json", 'w') as f:
+        json.dump(peak_dict, f)
 
     end = time.perf_counter()
+
+    total_peaks = np.sum([peak_dict[frame]["num_peaks"] for frame in peak_dict.keys()])
+    mean_peaks = np.mean([peak_dict[frame]["num_peaks"] for frame in peak_dict.keys()])
 
     if config['verbose']:
         print()
@@ -106,15 +114,18 @@ def find_sample_peaks(config):
         print(f'Min peak distance: {min_dist} pixels')
         print(f'Rel. peak threshold: {config["pkid_sample_threshold"]}')
         print(f'Abs. peak threshold: {threshold:0.3}')
-        print(f'Number of peaks found: {peak_coords.shape[0]}')
+        print(f'Number of peaks found: {total_peaks}')
+        print(f'Avg peaks per frame: {mean_peaks}')
         print(f'Time to calculate: {end-start: 0.3} sec')
 
     if config['show_plots']:
-        plt.imshow(np.max(img_stack, axis=0), vmax=60)
-        plt.scatter(peak_coords['img_x'], peak_coords['img_y'], edgecolor='red', facecolor='None', s=160)
-        plt.show()
+        pass
 
     return
+
+
+def get_peak_coords(img, min_dist, threshold, border=(10, 10)):
+    return peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=border)
 
 
 def isolate_peaks(input_yml, substrate_sim_peak_dict, distance=5):
@@ -294,52 +305,6 @@ def isolate_peaks(input_yml, substrate_sim_peak_dict, distance=5):
     with open(peak_dict_path, 'w') as json_file:
         json.dump(peak_dict, json_file)
     tifffile.imsave(seg_img_path, np.int32(data))
-    return
-
-
-def group_peaks(config):
-    """ 
-    This function groups peaks by the z values of their centers of mass. Peaks that 
-    are centered on the same frame will be in roughly the same location. After this,
-    they are sorted by their length in z because larger length means larger grain. The 
-    output should be groups of grains which are roughly the same size in the same
-    position on the grid.
-
-    inputs:
-            center_xy: list of xy values for all peaks
-            center_z: list of z values for all peaks
-            min_peaks: minimum number of peaks to be considered a group
-    outputs:
-            df: pandas dataframe of the groups
-            XYS: List of xys for each group
-    """
-    print('group peaks')
-    working_dir = config['working_dir']
-    min_peaks = config['pkgp_min_group_size']
-    max_peaks = config['pkgp_max_group_size']
-
-    raw_data = np.load(f'{working_dir}/peaks/sample_peaks.npy')
-    spec_positions = ut.read_spec_log(config, 'Lab_X', 'Lab_Y', 'Lab_Z', 'Phi', 'Chi', 'Theta')
-
-    frames = np.unique(raw_data['frame'])
-    group_info = np.zeros((len(frames), 8))  # frame, num_peaks, and the six spec positions
-    for i, frame in enumerate(frames):
-        selection = raw_data['frame'] == frame
-        group_info[i] = np.array([frame, np.sum(selection), *spec_positions[frame]])
-        if min_peaks < np.sum(selection) < max_peaks:
-            coords = np.column_stack((raw_data['img_x'], raw_data['img_y']))[selection]
-            np.save(f'{working_dir}/groups/group_{i:04}.npy', coords)
-
-    group_info = np.rec.fromrecords(group_info,
-                                    names=('frame', 'num_peaks', 'Lab_X', 'Lab_Y', 'Lab_Z', 'Phi', 'Chi', 'Theta'))
-    np.save(f'{working_dir}/groups/group_info.npy', group_info)
-
-    print('Number of Groups:', len(frames))
-    if config['show_plots']:
-        plt.scatter(group_info['frame'], group_info['num_peaks'])
-        plt.ylabel('number of peaks')
-        plt.xlabel('frame')
-        plt.show()
     return
 
 
