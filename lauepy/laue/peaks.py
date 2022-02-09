@@ -26,6 +26,11 @@ def save_peaks(config, peak_dict):
         json.dump(peak_dict, f)
 
 
+def load_peaks(config):
+    with open(f"{config['working_dir']}/peaks.json", 'r') as f:
+        return json.load(f)
+
+
 def find_substrate_peaks(config, peak_dict):
     """
     Find the coordinates of peaks in the substrate-only Laue image
