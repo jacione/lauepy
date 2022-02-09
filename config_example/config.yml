@@ -28,14 +28,22 @@ pkgp_min_group_size: 3
 pkgp_max_group_size: 250
 
 ### Laue analysis parameters (all start with "laue_")
-laue_goodness: 0
-laue_mis_err: 0.5
-laue_tolerance: 0.3
-laue_frequency: 0
-laue_comb_sub: 0
-laue_times: 1
+laue_substrate_goodness: 0
+laue_substrate_mis_err: 0.5
+laue_substrate_tolerance: 0.3
+laue_substrate_frequency: 0
+laue_substrate_comb_sub: 0
+laue_substrate_times: 1
+
+laue_sample_goodness: 0
+laue_sample_mis_err: 0.5
+laue_sample_tolerance: 0.3
+laue_sample_frequency: 0
+laue_sample_comb_sub: 0
+laue_sample_times: 1
 
 ### Detector parameters (all start with "det_")
+# TODO have a separate workflow for detector calibration, then read in from output file
 det_rotation: [2.235803557314652, -0.011294793963117103, 2.2196066665966945]
 det_translation: [-1.5400214690949756, -31.02874070129578, -57.95072572716589]
 det_pixels: [1028, 512]
