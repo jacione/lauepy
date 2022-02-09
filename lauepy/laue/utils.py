@@ -1,9 +1,9 @@
 import shutil
 from pathlib import Path
-from xrayutilities.io import spec
 
-import yaml
 import numpy as np
+import yaml
+from xrayutilities.io import spec
 
 # Get the required keys from the default config file
 example = Path(__file__).parents[2] / 'config_example/config.yml'
