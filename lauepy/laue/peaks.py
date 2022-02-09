@@ -21,7 +21,16 @@ from lauepy.rxlibs.xmd34 import lattice as latt
 import lauepy.laue.utils as ut
 
 
-def find_substrate_peaks(config):
+def init_peaks():
+    return dict()
+
+
+def save_peaks(config, peak_dict):
+    with open(f"{config['working_dir']}/peaks.json", 'w') as f:
+        json.dump(peak_dict, f)
+
+
+def find_substrate_peaks(config, peak_dict):
     """
     Find the coordinates of peaks in the substrate-only Laue image
     """
@@ -38,14 +47,12 @@ def find_substrate_peaks(config):
     peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
     peak_coords = np.fliplr(peak_coords)
 
-    peak_dict = {f'peak_{i}': coords for i, coords in enumerate(peak_coords)}
-    with open(f"{working_dir}/substrate/peaks.json", 'w') as f:
-        json.dump(peak_dict, f)
+    peak_dict['substrate'] = {'coords': peak_coords.tolist(), 'num_peaks': peak_coords.shape[0]}
 
     structure = np.zeros((15, 15))
     structure[draw.disk((7, 7), 5.5)] = 1
     sub_mask = ndi.binary_dilation(img > threshold, structure=structure)
-    np.save(f"{working_dir}/substrate/mask.npy", np.array([sub_mask]))
+    np.save(f"{working_dir}/substrate_mask.npy", np.array([sub_mask]))
 
     end = time.perf_counter()
 
@@ -67,10 +74,10 @@ def find_substrate_peaks(config):
         plt.scatter(peak_coords[:, 0], peak_coords[:, 1], edgecolor='red', facecolor='None', s=160)
         plt.show()
 
-    return peak_coords
+    return peak_dict
 
 
-def find_sample_peaks(config):
+def find_sample_peaks(config, peak_dict):
     start = time.perf_counter()
 
     working_dir = config['working_dir']
@@ -83,25 +90,20 @@ def find_sample_peaks(config):
 
     # Load the mask from the substrate
     try:
-        substrate_mask = np.load(f"{working_dir}/substrate/mask.npy")
+        substrate_mask = np.load(f"{working_dir}/substrate_mask.npy")
     except FileNotFoundError:
-        find_substrate_peaks(config)
-        substrate_mask = np.load(f"{working_dir}/substrate/mask.npy")
+        find_substrate_peaks(config, peak_dict)
+        substrate_mask = np.load(f"{working_dir}/substrate_mask.npy")
     substrate_mask = np.repeat(substrate_mask, img_stack.shape[0], axis=0)
 
     img_stack = np.ma.array(img_stack, mask=substrate_mask)
-    spec_positions = ut.read_spec_log(config, 'Lab_X', 'Lab_Y', 'Lab_Z', 'Phi', 'Chi', 'Theta')
-    peak_dict = {}
 
     for frame, img in enumerate(img_stack):
-        frame_data = {key: spec_positions[key][frame] for key in spec_positions.dtype.names}
         peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
-        frame_data['coords'] = list(np.fliplr(peak_coords))
-        frame_data['num_peaks'] = len(peak_coords)
-        peak_dict[f'frame_{frame:03}'] = frame_data
-
-    with open(f"{working_dir}/peaks/sample_peaks.json", 'w') as f:
-        json.dump(peak_dict, f)
+        peak_dict[f'frame_{frame:03}'] = {
+            'coords': np.fliplr(peak_coords).tolist(),
+            'num_peaks': peak_coords.shape[0]
+        }
 
     end = time.perf_counter()
 
@@ -121,7 +123,21 @@ def find_sample_peaks(config):
     if config['show_plots']:
         pass
 
-    return
+    return peak_dict
+
+
+def record_positions(config, peak_dict):
+    phi, chi, theta = ut.read_spec_init(config, 'Phi', 'Chi', 'Theta')
+    peak_dict['angles'] = {'phi': phi, 'chi': chi, 'theta': theta}
+
+    spec_positions = ut.read_spec_log(config, 'Lab_X', 'Lab_Y', 'Lab_Z')
+    for frame, frame_data in peak_dict.items():
+        try:
+            i = int(frame[-3:])  # The frame number should be the last 3 characters in the dictionary key
+        except ValueError:
+            continue  # keys that don't correspond to frames should skip this part
+        frame_data['lab_xyz'] = list(spec_positions[i])
+    return peak_dict
 
 
 def get_peak_coords(img, min_dist, threshold, border=10):
