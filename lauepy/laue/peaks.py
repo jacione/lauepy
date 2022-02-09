@@ -67,7 +67,7 @@ def find_substrate_peaks(config):
         plt.scatter(peak_coords[:, 0], peak_coords[:, 1], edgecolor='red', facecolor='None', s=160)
         plt.show()
 
-    return
+    return peak_coords
 
 
 def find_sample_peaks(config):
@@ -95,7 +95,7 @@ def find_sample_peaks(config):
 
     for frame, img in enumerate(img_stack):
         frame_data = {key: spec_positions[key][frame] for key in spec_positions.dtype.names}
-        peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=(10, 10))
+        peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
         frame_data['coords'] = list(np.fliplr(peak_coords))
         frame_data['num_peaks'] = len(peak_coords)
         peak_dict[f'frame_{frame:03}'] = frame_data
@@ -124,7 +124,7 @@ def find_sample_peaks(config):
     return
 
 
-def get_peak_coords(img, min_dist, threshold, border=(10, 10)):
+def get_peak_coords(img, min_dist, threshold, border=10):
     return peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=border)
 
 
