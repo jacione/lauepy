@@ -21,10 +21,6 @@ from lauepy.rxlibs.xmd34 import lattice as latt
 import lauepy.laue.utils as ut
 
 
-def init_peaks():
-    return dict()
-
-
 def save_peaks(config, peak_dict):
     with open(f"{config['working_dir']}/peaks.json", 'w') as f:
         json.dump(peak_dict, f)
