@@ -312,8 +312,7 @@ class AutoLaue:
         reduced_list = [reduced_list[i] for i in list(good_ind[0])]
         return reduced_list
 
-    def index(self, params, substrate=False):
-        self.set_params(substrate)
+    def index(self):
         self.pattern_ID = 1
         self.pattern_dict = {}
 
@@ -327,6 +326,7 @@ class AutoLaue:
             elif frame == 'substrate':
                 i = -1
                 print('Indexing substrate')
+                self.set_params(substrate=True)
             else:
                 continue
             count += 1
@@ -350,11 +350,9 @@ class AutoLaue:
                 }
 
                 self.pattern_ID += 1
-        with open(params['peak_dict'], 'w') as json_file:
-            json.dump(self.peak_dict, json_file)
-
-        with open(params['pattern_dict'], 'w') as json_file:
-            json.dump(self.pattern_dict, json_file)
+            if frame == 'substrate':
+                self.set_params(substrate=False)
+        pk.save_peaks(self.config, self.peak_dict)
         return
 
     def loss_function_distance(self, xtal_rmat, xy_exp, hkl_labels):

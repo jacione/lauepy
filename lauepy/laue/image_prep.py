@@ -35,7 +35,7 @@ def extract_substrate(config):
     img = exposure.adjust_gamma(img, config['prep_gamma'], np.mean(img))
 
     # Rolling ball filter removes large-scale features (such as vignette)
-    # img_rb = img - restoration.rolling_ball(img, radius=config['prep_rolling_ball_radius'])
+    # img = img - restoration.rolling_ball(img, radius=config['prep_rolling_ball_radius'])
     
     # Gaussian filter is faster and has less noise - particularly around the edges.
     img = img - ndi.gaussian_filter(img, config['prep_gaussian_sigma'])
