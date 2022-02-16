@@ -1,83 +1,8 @@
 # Processing functions library (pflibs)
-import platform
 import re
-from copy import copy
 
-import Laue_Decon_Every_sapphire as LDS
 import numpy as np
-import tifffile
 from scipy.spatial.transform import Rotation
-
-
-def get_peaklist(filename, threshold):
-    pre_processed = np.zeros((1, 512, 1028))
-
-    if platform.node() == 'APMAir59.local':
-        folder = '/Users/pateras/work/Staff20-2-work/Analysis/LaueGo/'
-    else:
-        folder = ''
-
-    pathname = folder + filename
-
-    pre_processed[0, :, :] = tifffile.imread(pathname).astype(float)
-    pre_processed[np.where(np.isnan(pre_processed))] = 0.
-    pre_processed[np.where(np.isinf(pre_processed))] = 0.
-    # add crosses between the four detector chips
-    # pre_processed = np.vstack((np.hstack(
-    #     (pre_processed[0, 0:256, 0:256], np.zeros((256, 4)), pre_processed[0, 0:256, 256:512])), np.zeros((5, 516)),
-    #                            np.hstack((pre_processed[0, 256:512, 0:256], np.zeros((256, 4)),
-    #                                       pre_processed[0, 256:512, 256:512]))))
-    # pre_processed.resize([517,516,1])
-    # print(pre_processed.shape)
-    processed = copy(pre_processed)
-    # threshold the image
-    # threshold = 1e5
-    processed[processed < threshold] = 0
-    processed[processed > 0] = 1
-    # Blob finding
-    peak_diameter = 1  # pick a minimum peak diameter in the binary image. All peaks below this will be deleted #
-
-    peak_dict = LDS.isolate_peaks(processed, pre_processed, peak_diameter,
-                                  avg=True)  # peak_dict is the list of all found peaks
-    real_xys = [(peak_dict[pk]['XY']) for pk in peak_dict]
-    # Group peaks by their center_frame. Eliminate groups that are too small or too big
-    max_peaks = 300  # maximum # of peaks you want in a group
-    min_peaks = 0  # minimum number of peaks you want in a group
-
-    new_group_dict = {}
-    group_dict = LDS.group_peaks(peak_dict, min_peaks, max_peaks)
-    # print('Number of Groups:',len([grp for grp in group_dict]))
-    zs = [group_dict[grp]['Center_Frame'] for grp in group_dict]
-    Ids = [len(group_dict[grp]['ID_List']) for grp in group_dict]
-
-    # the real data overlay with the peak extraction
-    FullPeakList = {}
-    FullPeakList['x0'] = []
-    FullPeakList['y0'] = []
-    for peak in real_xys:
-        FullPeakList['x0'].append(peak[0])
-        FullPeakList['y0'].append(peak[1])
-
-    # fig = plt.figure(figsize=(10, 10), dpi=50)
-    # ax = fig.add_subplot(111)
-    # ax.imshow(processed[:, :, 0])
-    # ax.scatter(FullPeakList['x0'], FullPeakList['y0'], alpha=0.7, edgecolor='red', facecolor='None', s=160)
-
-    return peak_dict, FullPeakList, pre_processed[:, :, 0]
-
-
-# ### Calculate in-plane and out-of-plane vectors for *Spec*
-# phi, chi, theta = -9.03446, 85.6951, -25.342
-# M = np.array([[3.8252, 1.9412, 10.7445],
-#               [-10.9184, 0.6731, 3.7655],
-#               [0.0067, -11.3852, 2.0546]])
-#
-# in-plane: np.array([8.178886366943766, -8.182198804677935, 0.028383512850703])  # Matlab result
-# out-of-plane: np.array([0.046797733450330, 0.006646696804434, -11.568972790949328])  # Matlab result
-# delg_gonio1 = Rotation.from_euler('YZX', [-theta, chi-90, -phi], degrees=True).as_matrix()
-# Ry = Rotation.from_euler('Y', -theta, degrees=True).as_matrix()
-# Rz = Rotation.from_euler('Z', chi-90, degrees=True).as_matrix()
-# Rx = Rotation.from_euler('X', -phi, degrees=True).as_matrix()
 
 
 def rot_wcha_modified(data, axis, angle):
