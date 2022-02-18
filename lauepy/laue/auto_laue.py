@@ -183,14 +183,15 @@ class AutoLaue:
         return
 
     def run_euler(self):
-        if self.system == 'linux':
-            sub.call(
-                ['./eulerlinux', '-k', '24', '-t', '24', '-c', '72', '-a', '%s' % self.tolerance, '-f', 'Peaks.txt'])
-        elif self.system == 'mac':
-            sub.call(['./euler', '-k', '30', '-t', '30', '-c', '180', '-f', 'Peaks.txt'])  ## for sapphire
-            # sub.call(['./Euler','-k','24','-t','24','-c','72','-a','%s'%self.tolerance,'-f','Peaks.txt'])
-        elif self.system == 'windows':
-            sub.call(['euler', '-k', '16', '-t', '24', '-c', '72', '-a', '%s' % self.tolerance, '-f', 'Peaks.txt'])
+        # TODO: put the euler program for linux/mac/windows in the same directory and select based on current OS
+        sub.call([
+            f'.{self.config["lauepy_dir"]}/lauepy/crystals/eulerlinux',
+            '-k', '24',
+            '-t', '24',
+            '-c', '72',
+            '-a', f'{self.tolerance}',
+            '-f', f'{self.working_dir}/Peaks.txt'
+        ])
         return
 
     @staticmethod
