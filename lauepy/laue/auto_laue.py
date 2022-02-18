@@ -1,5 +1,5 @@
 """
-Written by Matt Wilkin and Yueheng Zhang
+Written by Matt Wilkin, Yueheng Zhang, and Nick Porter
 """
 # Laue Simulation and Deconvolution
 
@@ -140,7 +140,8 @@ class AutoLaue:
         for frame_data in self.peak_dict.values():
             if 'coords' not in frame_data.keys():
                 continue
-            for coords in frame_data['coords']:
+            frame_data['G_vectors'] = [None for _ in frame_data['coords']]
+            for i, coords in enumerate(frame_data['coords']):
                 px, py = coords
                 # start calculating the g-vectors below ###################################
                 xd = (px - 0.5 * (self.pix_x - 1)) * self.pitch_x
@@ -163,7 +164,7 @@ class AutoLaue:
                 q_y = q_y / total_qhat
                 q_z = q_z / total_qhat
 
-                frame_data['G_vectors'] = (q_x, q_y, q_z)
+                frame_data['G_vectors'][i] = (q_x, q_y, q_z)
         pk.save_peaks(self.config, self.peak_dict)
         return
 
