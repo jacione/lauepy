@@ -36,6 +36,7 @@ def read_config(yml_file):
     cfg['working_dir'] = f"/home/beams7/CXDUSER/34idc-work/{year}/{exp_id}/Analysis/lauepy_output/scan_{scan:04}"
     cfg['data_dir'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/AD34idcLaue_{exp_id}a/{exp_id}a_S{scan:04}"
     cfg['spec_file'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/{exp_id}a.spec"
+    cfg['lauepy_dir'] = f'{Path(__file__).parents[1]}'
 
     if not Path(cfg['data_dir']).exists():
         raise FileNotFoundError('Could not find the specified DATA DIRECTORY. Check config.')
@@ -43,7 +44,7 @@ def read_config(yml_file):
         raise FileNotFoundError('Could not find the specified SPEC FILE. Check config')
 
     id_dir = Path(cfg['working_dir'])
-    for subdir in ['', 'clean_images', 'peaks', 'substrate', 'groups', 'grains']:
+    for subdir in ['', 'clean_images', 'grains']:
         d = id_dir / subdir
         if not d.exists():
             d.mkdir(parents=True)
@@ -99,7 +100,7 @@ def purge(config):
     """
     Cleans out the working directory
     """
-    id_dir = Path(f"{config['working_dir']}/{config['working_id']}")
+    id_dir = Path(f"{config['working_dir']}")
     if id_dir.exists():
         shutil.rmtree(id_dir)
         id_dir.mkdir()
