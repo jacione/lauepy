@@ -168,34 +168,18 @@ class AutoLaue:
         pk.save_peaks(self.config, self.peak_dict)
         return
 
-    def write_mat_params(self, intensities, gvectors, ID):
-        peak_file = open('Peaks.txt', 'w')
-        lines = open("trial_gold_Peak.txt").readlines()
-        i = 1
-        while i <= 12:
-            for s in lines:
-                if s.startswith("$filetype") or \
-                        s.startswith("// parameters defining the crystal structure") or \
-                        s.startswith("$latticeAlphaT") or \
-                        s.startswith("$lengthUnit") or \
-                        s.startswith("// the following table contains xyz compotnents of G^ and the integral of the "
-                                     "peak"):
-                    peak_file.write(s)
-                if s.startswith("$structureDesc"):
-                    peak_file.write("$structureDesc		%s\n" % self.material)
-                if s.startswith("$latticeParameters"):
-                    peak_file.write("$latticeParameters	%s	// 2006, CODATA\n" % self.lattice_params)
-                if s.startswith("$SpaceGroup"):
-                    peak_file.write(
-                        "$SpaceGroup			%s					// Space Group number from International\n" % self.space_group)
-                if s.startswith("$N_Ghat+Intens"):
-                    peak_file.write("$N_Ghat+Intens 	%s		// number of G^ vectors\n" % len(intensities))
-                i += 1
-            # print("gvectors_group is",gvectors_group)
-            for n, new_Value in enumerate(gvectors):
-                peak_file.write("%s,%s,%s,%s\n" % (new_Value[0], new_Value[1], new_Value[2], intensities[n]))
-            peak_file.close()
-
+    def write_mat_params(self, gvectors):
+        s = f"$filetype	PeaksFile\n" \
+            f"$structureDesc {self.material}\n" \
+            f"$latticeParameters {self.lattice_params}\n" \
+            f"$latticeAlphaT 4.065E-10\n" \
+            f"$lengthUnit nm\n" \
+            f"$SpaceGroup {self.space_group}\n" \
+            f"$N_Ghat+Intens {len(gvectors)}\n"
+        for G in gvectors:
+            s += f"{G[0]},{G[1]},{G[2]},1.0\n"
+        with open(f'{self.working_dir}/Peaks.txt', 'w') as f:
+            f.write(s)
         return
 
     def run_euler(self):
@@ -268,7 +252,7 @@ class AutoLaue:
         for ind in indices:
             gvectors = np.array(frame_data['G_vectors'])[ind]
 
-            self.write_mat_params(np.ones(len(gvectors)), gvectors, count_index)
+            self.write_mat_params(gvectors)
             count_index += 1
             self.run_euler()
 
