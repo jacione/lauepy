@@ -303,7 +303,6 @@ class AutoLaue:
         self.pattern_dict = {}
 
         self.calc_gs()
-        count = 0
 
         for frame, frame_data in self.peak_dict.items():
             if frame.startswith('frame_'):
@@ -315,7 +314,6 @@ class AutoLaue:
                 self.set_params(substrate=True)
             else:
                 continue
-            count += 1
             reduced_o_list = self.orientation_counter(frame_data)
 
             for patt in reduced_o_list:
