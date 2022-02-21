@@ -84,10 +84,8 @@ def make_grain_dict(output_directory, pattern_dict_file='pattern_dict.json', gra
         # med_patt = g['Patts'][g['Positions'].index(g['COM'])]
         # print("med_patt",med_patt,"grain",grain)
         draw_patts = g['Patts']
-        for draw_patt in draw_patts:
-            op.overlay(output_directory, draw_patt, grain, threshold=threshold, reduction='reduction.yml',
-                       pat_dict='pattern_dict.json', plot=plot, det_params=det_params, cryst_params=cryst_path,
-                       frame_step=frame_stepsize)
+        for pattern in draw_patts:
+            op.overlay(config, pattern_dict[pattern], grain)
             # print(output_directory,len(grains))
     write_orient(config)
     with open(f'{working_dir}/pattern_dict.json', 'w') as json_file:
