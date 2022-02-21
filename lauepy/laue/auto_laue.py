@@ -335,7 +335,6 @@ class AutoLaue:
                 self.pattern_ID += 1
             if frame == 'substrate':
                 self.set_params(substrate=False)
-                break
         with open(f"{self.working_dir}/pattern_dict.json", 'w') as f:
             json.dump(self.pattern_dict, f)
         pk.save_peaks(self.config, self.peak_dict)
