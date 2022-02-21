@@ -9,7 +9,6 @@ import random
 import re
 import subprocess as sub
 import sys
-from pathlib import Path
 
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter as gf
@@ -76,7 +75,7 @@ class AutoLaue:
         self.tolerance = self.config[f'laue_{name}_tolerance']
         self.frequency = self.config[f'laue_{name}_frequency']
         self.mis_err = self.config[f'laue_{name}_mis_err']
-        with open(Path(__file__).resolve().parents[1] / f'crystals/{self.config[name]}.json') as f:
+        with open(f'{self.config["lauepy_dir"]}/crystals/{self.config[name]}.json') as f:
             xtal_params = json.load(f)
 
         self.material = xtal_params['material']
@@ -336,6 +335,9 @@ class AutoLaue:
                 self.pattern_ID += 1
             if frame == 'substrate':
                 self.set_params(substrate=False)
+                break
+        with open(f"{self.working_dir}/pattern_dict.json", 'w') as f:
+            json.dump(self.pattern_dict, f)
         pk.save_peaks(self.config, self.peak_dict)
         return
 
