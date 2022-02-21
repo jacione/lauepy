@@ -185,7 +185,7 @@ class AutoLaue:
     def run_euler(self):
         # TODO: put the euler program for linux/mac/windows in the same directory and select based on current OS
         sub.call([
-            f'.{self.config["lauepy_dir"]}/lauepy/crystals/eulerlinux',
+            f'{self.config["lauepy_dir"]}/scripts/eulerlinux',
             '-k', '24',
             '-t', '24',
             '-c', '72',
