@@ -89,7 +89,7 @@ def make_grain_dict(output_directory, pattern_dict_file='pattern_dict.json', gra
                        pat_dict='pattern_dict.json', plot=plot, det_params=det_params, cryst_params=cryst_path,
                        frame_step=frame_stepsize)
             # print(output_directory,len(grains))
-    wo(output_directory, cryst_path=cryst_path, grain_path=grain_dict_file)
-    with open(pattern_dict_file, 'w') as json_file:
+    write_orient(config)
+    with open(f'{working_dir}/pattern_dict.json', 'w') as json_file:
         json.dump(pattern_dict, json_file)
     return

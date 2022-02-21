@@ -8,17 +8,17 @@ import json
 # inp - in-place vector
 # outp - out of place vector
 
-def write_orient(output_directory, cryst_path='crystal_params.json', grain_path='grain_dict.json'):
-    with open(cryst_path) as f:
+def write_orient(config):
+    with open(f'{config["lauepy_dir"]}/crystals/{config["sample"]}.json') as f:
         crystal_params = json.load(f)
 
     a, b, c, alpha, beta, gamma = crystal_params['lattice_params']
     a, b, c = a * 1e10, b * 1e10, c * 1e10
-    with open(grain_path) as f:
+    with open(f"{config['working_dir']}/grains/grain_dict.json") as f:
         grain_dict = json.load(f)
     for grain in grain_dict:
         inp, outp = grain_dict[grain]['Spec_Orientation']
-        filename = output_directory + '/' + grain + '.mac'
+        filename = f"{config['working_dir']}/grains/grain_{grain}.mac"
 
         f = open(filename, "w")
         f.write("U[\"0\"] = {0:.3f}\n".format(a))  # lattice params
