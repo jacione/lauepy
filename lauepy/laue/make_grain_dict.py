@@ -1,22 +1,17 @@
 import json
-import os
-import shutil
-from shutil import copyfile
 
 import numpy as np
 
 import lauepy.laue.overlay_peaks as op
 from lauepy.laue.disorientation import calc_disorient, rmat_2_quat
-from lauepy.laue.write_specorient import write_orient as wo
+from lauepy.laue.write_specorient import write_orient
 
 
-def make_grain_dict(output_directory, pattern_dict_file='pattern_dict.json', grain_dict_file='grain_dict.json',
-                    cryst_path='crystal_params.json', mis_tol=0.5, plot=True, threshold=1e4,
-                    det_params='det_params.json', frame_stepsize=1):
-    with open(pattern_dict_file) as f:
+def make_grain_dict(config):
+    working_dir = config['working_dir']
+    with open(f'{working_dir}/pattern_dict.json', 'r') as f:
         pattern_dict = json.load(f)
-    with open(grain_dict_file) as f:
-        grains = json.load(f)
+    grains = {}
     count = 1
 
     for patt in pattern_dict:
@@ -31,7 +26,7 @@ def make_grain_dict(output_directory, pattern_dict_file='pattern_dict.json', gra
 
         for i, grain in enumerate(grains):
 
-            if misorientations[i] < mis_tol:
+            if misorientations[i] < config['grain_tolerance']:
                 if pattern_dict[patt]['Center_Frame'] not in grains[grain]['Frames']:
                     grains[grain]['Frames'].append(pattern_dict[patt]['Center_Frame'])
                     grains[grain]['Positions'].append(pattern_dict[patt]['Pos'])
@@ -43,17 +38,17 @@ def make_grain_dict(output_directory, pattern_dict_file='pattern_dict.json', gra
                 grains[grain]['Count'].append(pattern_dict[patt]['Count'])
                 match = True
         if not match:
-            grains['grain_%s' % count] = {}
-            grains['grain_%s' % count]['Rot_mat'] = pattern_dict[patt]['Rot_mat']
-            grains['grain_%s' % count]['Spec_Orientation'] = pattern_dict[patt]['Spec_Orientation']
-            grains['grain_%s' % count]['Patts'] = [patt]
-            grains['grain_%s' % count]['Frames'] = [pattern_dict[patt]['Center_Frame']]
-            grains['grain_%s' % count]['Positions'] = [pattern_dict[patt]['Pos']]
-            grains['grain_%s' % count]['RMS'] = [float(np.round(pattern_dict[patt]['RMS'], 2))]
-            grains['grain_%s' % count]['Dist'] = [float(np.round(pattern_dict[patt]['Dist'], 3))]
-            grains['grain_%s' % count]['Num_Peaks'] = [float(np.round(pattern_dict[patt]['Num_Peaks'], 1))]
-            grains['grain_%s' % count]['Patterns'] = [patt]
-            grains['grain_%s' % count]['Count'] = [pattern_dict[patt]['Count']]
+            grains[f'grain_{count}'] = {}
+            grains[f'grain_{count}']['Rot_mat'] = pattern_dict[patt]['Rot_mat']
+            grains[f'grain_{count}']['Spec_Orientation'] = pattern_dict[patt]['Spec_Orientation']
+            grains[f'grain_{count}']['Patts'] = [patt]
+            grains[f'grain_{count}']['Frames'] = [pattern_dict[patt]['Center_Frame']]
+            grains[f'grain_{count}']['Positions'] = [pattern_dict[patt]['Pos']]
+            grains[f'grain_{count}']['RMS'] = [float(np.round(pattern_dict[patt]['RMS'], 2))]
+            grains[f'grain_{count}']['Dist'] = [float(np.round(pattern_dict[patt]['Dist'], 3))]
+            grains[f'grain_{count}']['Num_Peaks'] = [float(np.round(pattern_dict[patt]['Num_Peaks'], 1))]
+            grains[f'grain_{count}']['Patterns'] = [patt]
+            grains[f'grain_{count}']['Count'] = [pattern_dict[patt]['Count']]
             count += 1
     for grain in grains:
         grains[grain]['Avg_RMS'] = float(np.round(np.mean(grains[grain]['RMS']), 2))
@@ -64,16 +59,16 @@ def make_grain_dict(output_directory, pattern_dict_file='pattern_dict.json', gra
         pos = np.array(grains[grain]['Positions'])
         grains[grain]['COM'] = pos[np.argsort(pos[:, 0])][len(pos) // 2].tolist()
 
-    with open(grain_dict_file, 'w') as json_file:
+    with open(f'{working_dir}/grains/grain_dict.json', 'w') as json_file:
         json.dump(grains, json_file)
-    if not os.path.exists(output_directory):
-        os.mkdir(output_directory)
-    else:
-        shutil.rmtree(output_directory)
-        os.mkdir(output_directory)
-    if os.path.exists(output_directory + '/seg_stack.tif'):
-        os.remove(output_directory + '/seg_stack.tif')
-    copyfile('seg_stack.tif', output_directory + '/seg_stack.tif')
+    # if not os.path.exists(working_dir):
+    #     os.mkdir(working_dir)
+    # else:
+    #     shutil.rmtree(working_dir)
+    #     os.mkdir(working_dir)
+    # if os.path.exists(working_dir + '/seg_stack.tif'):
+    #     os.remove(working_dir + '/seg_stack.tif')
+    # copyfile('seg_stack.tif', working_dir + '/seg_stack.tif')
 
     for grain in grains:
 
