@@ -202,7 +202,7 @@ class AutoLaue:
         return ind
 
     def extract_vals(self):
-        with open("Index.txt") as f:
+        with open(f"{self.working_dir}/Index.txt") as f:
             file_split = re.split("[$]pattern\d", f.read())[1:]
         found_patts = []
 
