@@ -15,40 +15,50 @@ def make_grain_dict(config):
     count = 1
 
     for patt in pattern_dict:
-
+        if pattern_dict[patt]['Center_Frame'] == -1:
+            grains['substrate'] = {
+                'Rot_mat': pattern_dict[patt]['Rot_mat'],
+                'Spec_Orientation': pattern_dict[patt]['Spec_Orientation'],
+                'Patts': [patt],
+                'Frames': [pattern_dict[patt]['Center_Frame']],
+                'Positions': [pattern_dict[patt]['Pos']],
+                'RMS': [float(np.round(pattern_dict[patt]['RMS'], 2))],
+                'Dist': [float(np.round(pattern_dict[patt]['Dist'], 3))],
+                'Num_Peaks': [float(np.round(pattern_dict[patt]['Num_Peaks'], 1))],
+                'Patterns': [patt],
+                'Count': [pattern_dict[patt]['Count']]
+            }
+            continue
         match = False
         if len(list(grains)) > 0:
             pat_rot = [np.array(pattern_dict[patt]['Rot_mat']) for _ in grains]
             grain_rot = [np.array(grains[grain]['Rot_mat']) for grain in grains]
             misorientations = calc_disorient(rmat_2_quat(pat_rot), rmat_2_quat(grain_rot))
-        else:
-            continue
-
-        for i, grain in enumerate(grains):
-
-            if misorientations[i] < config['grain_tolerance']:
-                if pattern_dict[patt]['Center_Frame'] not in grains[grain]['Frames']:
-                    grains[grain]['Frames'].append(pattern_dict[patt]['Center_Frame'])
-                    grains[grain]['Positions'].append(pattern_dict[patt]['Pos'])
-                grains[grain]['Patts'].append(patt)
-                grains[grain]['RMS'].append(float(np.round(pattern_dict[patt]['RMS'], 2)))
-                grains[grain]['Dist'].append(float(np.round(pattern_dict[patt]['Dist'], 3)))
-                grains[grain]['Num_Peaks'].append(float(np.round(pattern_dict[patt]['Num_Peaks'], 1)))
-                grains[grain]['Patterns'].append(patt)
-                grains[grain]['Count'].append(pattern_dict[patt]['Count'])
-                match = True
+            for key, grain in enumerate(grains):
+                if misorientations[key] < config['grain_tolerance']:
+                    if pattern_dict[patt]['Center_Frame'] not in grains[grain]['Frames']:
+                        grains[grain]['Frames'].append(pattern_dict[patt]['Center_Frame'])
+                        grains[grain]['Positions'].append(pattern_dict[patt]['Pos'])
+                    grains[grain]['Patts'].append(patt)
+                    grains[grain]['RMS'].append(float(np.round(pattern_dict[patt]['RMS'], 2)))
+                    grains[grain]['Dist'].append(float(np.round(pattern_dict[patt]['Dist'], 3)))
+                    grains[grain]['Num_Peaks'].append(float(np.round(pattern_dict[patt]['Num_Peaks'], 1)))
+                    grains[grain]['Patterns'].append(patt)
+                    grains[grain]['Count'].append(pattern_dict[patt]['Count'])
+                    match = True
         if not match:
-            grains[f'grain_{count}'] = {}
-            grains[f'grain_{count}']['Rot_mat'] = pattern_dict[patt]['Rot_mat']
-            grains[f'grain_{count}']['Spec_Orientation'] = pattern_dict[patt]['Spec_Orientation']
-            grains[f'grain_{count}']['Patts'] = [patt]
-            grains[f'grain_{count}']['Frames'] = [pattern_dict[patt]['Center_Frame']]
-            grains[f'grain_{count}']['Positions'] = [pattern_dict[patt]['Pos']]
-            grains[f'grain_{count}']['RMS'] = [float(np.round(pattern_dict[patt]['RMS'], 2))]
-            grains[f'grain_{count}']['Dist'] = [float(np.round(pattern_dict[patt]['Dist'], 3))]
-            grains[f'grain_{count}']['Num_Peaks'] = [float(np.round(pattern_dict[patt]['Num_Peaks'], 1))]
-            grains[f'grain_{count}']['Patterns'] = [patt]
-            grains[f'grain_{count}']['Count'] = [pattern_dict[patt]['Count']]
+            grains[f'grain_{count}'] = {
+                'Rot_mat': pattern_dict[patt]['Rot_mat'],
+                'Spec_Orientation': pattern_dict[patt]['Spec_Orientation'],
+                'Patts': [patt],
+                'Frames': [pattern_dict[patt]['Center_Frame']],
+                'Positions': [pattern_dict[patt]['Pos']],
+                'RMS': [float(np.round(pattern_dict[patt]['RMS'], 2))],
+                'Dist': [float(np.round(pattern_dict[patt]['Dist'], 3))],
+                'Num_Peaks': [float(np.round(pattern_dict[patt]['Num_Peaks'], 1))],
+                'Patterns': [patt],
+                'Count': [pattern_dict[patt]['Count']]
+            }
             count += 1
     for grain in grains:
         grains[grain]['Avg_RMS'] = float(np.round(np.mean(grains[grain]['RMS']), 2))
@@ -70,17 +80,17 @@ def make_grain_dict(config):
     #     os.remove(working_dir + '/seg_stack.tif')
     # copyfile('seg_stack.tif', working_dir + '/seg_stack.tif')
 
-    for grain in grains:
-
-        g = grains[grain]
-        for patt in g['Patts']:
+    for key, grain in grains.items():
+        if key == 'substrate':
+            continue
+        for patt in grain['Patts']:
             pattern_dict[patt]['Grain'] = grain
         # print("g['Patts']",g['Patts'],"g['Positions']",g['Positions'],"g['COM']",g['COM'])
         # med_patt = g['Patts'][g['Positions'].index(g['COM'])]
         # print("med_patt",med_patt,"grain",grain)
-        draw_patts = g['Patts']
+        draw_patts = grain['Patts']
         for pattern in draw_patts:
-            op.overlay(config, pattern_dict[pattern], grain)
+            op.overlay(config, pattern_dict[pattern], key)
             # print(output_directory,len(grains))
     write_orient(config)
     with open(f'{working_dir}/peaks/patterns.json', 'w') as json_file:
