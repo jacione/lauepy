@@ -69,7 +69,7 @@ def make_grain_dict(config):
         pos = np.array(grains[grain]['Positions'])
         grains[grain]['COM'] = pos[np.argsort(pos[:, 0])][len(pos) // 2].tolist()
 
-    with open(f'{working_dir}/grains/grain_dict.json', 'w') as json_file:
+    with open(f'{working_dir}/grains/grains.json', 'w') as json_file:
         json.dump(grains, json_file)
     # if not os.path.exists(working_dir):
     #     os.mkdir(working_dir)
