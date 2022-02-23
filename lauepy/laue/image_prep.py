@@ -11,7 +11,7 @@ import numpy as np
 import scipy.ndimage as ndi
 import tifffile
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
-from skimage import restoration, exposure
+from skimage import exposure
 from progressbar import progressbar as pbar
 
 
