@@ -18,7 +18,7 @@ def write_orient(config):
         grain_dict = json.load(f)
     for grain in grain_dict:
         inp, outp = grain_dict[grain]['Spec_Orientation']
-        filename = f"{config['working_dir']}/grains/grain_{grain}.mac"
+        filename = f"{config['working_dir']}/grains/{grain}.mac"
 
         f = open(filename, "w")
         f.write("U[\"0\"] = {0:.3f}\n".format(a))  # lattice params

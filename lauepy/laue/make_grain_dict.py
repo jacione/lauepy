@@ -9,7 +9,7 @@ from lauepy.laue.write_specorient import write_orient
 
 def make_grain_dict(config):
     working_dir = config['working_dir']
-    with open(f'{working_dir}/pattern_dict.json', 'r') as f:
+    with open(f'{working_dir}/peaks/patterns.json', 'r') as f:
         pattern_dict = json.load(f)
     grains = {}
     count = 1
@@ -83,6 +83,6 @@ def make_grain_dict(config):
             op.overlay(config, pattern_dict[pattern], grain)
             # print(output_directory,len(grains))
     write_orient(config)
-    with open(f'{working_dir}/pattern_dict.json', 'w') as json_file:
+    with open(f'{working_dir}/peaks/patterns.json', 'w') as json_file:
         json.dump(pattern_dict, json_file)
     return

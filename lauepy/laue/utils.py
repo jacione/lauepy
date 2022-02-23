@@ -44,7 +44,7 @@ def read_config(yml_file):
         raise FileNotFoundError('Could not find the specified SPEC FILE. Check config')
 
     id_dir = Path(cfg['working_dir'])
-    for subdir in ['', 'clean_images', 'grains']:
+    for subdir in ['', 'clean_images', 'peaks', 'substrate', 'grains']:
         d = id_dir / subdir
         if not d.exists():
             d.mkdir(parents=True)
@@ -103,7 +103,10 @@ def purge(config):
     id_dir = Path(f"{config['working_dir']}")
     if id_dir.exists():
         shutil.rmtree(id_dir)
-        id_dir.mkdir()
+        for subdir in ['', 'clean_images', 'peaks', 'substrate', 'grains']:
+            d = id_dir / subdir
+            if not d.exists():
+                d.mkdir(parents=True)
     return
 
 

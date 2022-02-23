@@ -15,7 +15,7 @@ def overlay(config, pattern, grain):
 
     xs, ys = zip(*xys)
     ####### 
-    raw_img = tifffile.imread(f"{config['data_dir']}/{config['exp_id']}a_S{config['scan']:04}_{frame:05}.tiff")
+    raw_img = tifffile.imread(f"{config['data_dir']}/{config['exp_id']}a_S{config['scan']:04}_{frame:05}.tif")
     clean_img = tifffile.imread(f"{config['working_dir']}/clean_images/img_{frame:05}.tiff")
 
     if config['show_plots']:

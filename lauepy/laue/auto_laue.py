@@ -177,7 +177,7 @@ class AutoLaue:
             f"$N_Ghat+Intens {len(gvectors)}\n"
         for G in gvectors:
             s += f"{G[0]},{G[1]},{G[2]},1.0\n"
-        with open(f'{self.working_dir}/Peaks.txt', 'w') as f:
+        with open(f'{self.working_dir}/peaks/Peaks.txt', 'w') as f:
             f.write(s)
         return
 
@@ -189,7 +189,7 @@ class AutoLaue:
             '-t', '24',
             '-c', '72',
             '-a', f'{self.tolerance}',
-            '-f', f'{self.working_dir}/Peaks.txt'
+            '-f', f'{self.working_dir}/peaks/Peaks.txt'
         ])
         return
 
@@ -201,7 +201,7 @@ class AutoLaue:
         return ind
 
     def extract_vals(self):
-        with open(f"{self.working_dir}/Index.txt") as f:
+        with open(f"{self.working_dir}/peaks/Index.txt") as f:
             file_split = re.split("[$]pattern\d", f.read())[1:]
         found_patts = []
 
@@ -335,7 +335,7 @@ class AutoLaue:
                 self.pattern_ID += 1
             if frame == 'substrate':
                 self.set_params(substrate=False)
-        with open(f"{self.working_dir}/pattern_dict.json", 'w') as f:
+        with open(f"{self.working_dir}/peaks/patterns.json", 'w') as f:
             json.dump(self.pattern_dict, f)
         pk.save_peaks(self.config, self.peak_dict)
         return

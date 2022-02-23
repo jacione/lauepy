@@ -46,7 +46,7 @@ def extract_substrate(config):
         plt.imshow(img, vmax=np.quantile(img, 0.99))
         plt.show()
     
-    tifffile.imsave(f"{config['working_dir']}/substrate_peaks.tiff", np.array(img, dtype='i'))
+    tifffile.imsave(f"{config['working_dir']}/substrate/substrate_peaks.tiff", np.array(img, dtype='i'))
 
     return
 
@@ -101,15 +101,6 @@ def cleanup_images(config):
     t1 = time.perf_counter()
     if config['verbose']:
         print(f'Total time: {t1-t0}')
-
-    if config['show_plots']:
-        files = sorted(Path(output_dir).iterdir())
-        img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
-
-        plt.figure()
-        plt.plot(np.median(img_stack, axis=(1, 2)))
-        plt.title('median values of background-subtracted images')
-        plt.show()
 
     return
 

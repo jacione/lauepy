@@ -22,12 +22,12 @@ import lauepy.laue.utils as ut
 
 
 def save_peaks(config, peak_dict):
-    with open(f"{config['working_dir']}/peaks.json", 'w') as f:
+    with open(f"{config['working_dir']}/peaks/peaks.json", 'w') as f:
         json.dump(peak_dict, f)
 
 
 def load_peaks(config):
-    with open(f"{config['working_dir']}/peaks.json", 'r') as f:
+    with open(f"{config['working_dir']}/peaks/peaks.json", 'r') as f:
         return json.load(f)
 
 
@@ -39,7 +39,7 @@ def find_substrate_peaks(config, peak_dict):
 
     working_dir = config['working_dir']
 
-    img = tifffile.imread(f'{working_dir}/substrate_peaks.tiff')
+    img = tifffile.imread(f'{working_dir}/substrate/substrate_peaks.tiff')
     img = ndi.median_filter(img, size=2)
 
     threshold = np.mean(img) * config['pkid_substrate_threshold']
@@ -53,7 +53,7 @@ def find_substrate_peaks(config, peak_dict):
     structure = np.zeros((15, 15))
     structure[draw.disk((7, 7), 5.5)] = 1
     sub_mask = ndi.binary_dilation(img > threshold, structure=structure)
-    np.save(f"{working_dir}/substrate_mask.npy", np.array([sub_mask]))
+    np.save(f"{working_dir}/substrate/substrate_mask.npy", np.array([sub_mask]))
 
     end = time.perf_counter()
 
@@ -91,10 +91,10 @@ def find_sample_peaks(config, peak_dict):
 
     # Load the mask from the substrate
     try:
-        substrate_mask = np.load(f"{working_dir}/substrate_mask.npy")
+        substrate_mask = np.load(f"{working_dir}/substrate/substrate_mask.npy")
     except FileNotFoundError:
         find_substrate_peaks(config, peak_dict)
-        substrate_mask = np.load(f"{working_dir}/substrate_mask.npy")
+        substrate_mask = np.load(f"{working_dir}/substrate/substrate_mask.npy")
     substrate_mask = np.repeat(substrate_mask, img_stack.shape[0], axis=0)
 
     img_stack = np.ma.array(img_stack, mask=substrate_mask)
