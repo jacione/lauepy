@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+from tkinter import Tk, filedialog
 
 import numpy as np
 import yaml
@@ -11,6 +12,14 @@ with open(example, 'r') as F:
     REQUIRED = yaml.safe_load(F)
 
 
+def file_prompt():
+    root = Tk()
+    root.withdraw()
+    f = filedialog.askopenfilename()
+    assert f.endswith('.yml'), 'Configuration must be a *.yml file.'
+    return f
+
+
 def read_config(yml_file):
     """
     Reads a configuration file and returns it as a dictionary.
@@ -20,7 +29,10 @@ def read_config(yml_file):
     :return: config
     :rtype: dict
     """
+
     # Load the configuration file
+    if yml_file == '':
+        yml_file = file_prompt()
     with open(yml_file, 'r') as f:
         cfg = yaml.safe_load(f)
 
