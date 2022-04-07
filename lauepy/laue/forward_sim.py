@@ -230,7 +230,7 @@ class LaueSimulation(object):
         """
         self.detgeos = deepcopy(self._init_detgeos)
         self.xtal_rot = deepcopy(self._init_xtal_rot)
-        if hasattr(self, 'peaks_plot'):
+        if self.peaks_plot is not None:
             self.gen_peaks_to_plot()
             self.update_plots()
 
@@ -261,7 +261,7 @@ class LaueSimulation(object):
         """
         generate list of peaks to be plotted on each detector
         """
-        if not hasattr(self, 'peakpool'):
+        if self.peakpool is None:
             #### generate a pool of peaks that can potentially hit detector ####
 
             energy_cutoffs_inv_m = utils.keV_to_inv_m(self.energy_cutoffs_keV)
@@ -395,7 +395,7 @@ class LaueSimulation(object):
             self.plotslist.append(thisplot)
 
     def update_plots(self, **kwargs):
-        if hasattr(self, 'plotslist'):
+        if self.plotslist is not None:
             axeslist = []
             for plot1 in self.plotslist:
                 plot1['points'].remove()
@@ -405,12 +405,12 @@ class LaueSimulation(object):
             self.make_plots(axeslist, **kwargs)
 
     def clear_plots(self):
-        if hasattr(self, 'plotslist'):
+        if self.plotslist is not None:
             for plot1 in self.plotslist:
                 plot1['points'].remove()
                 for label in plot1['labels']:
                     label.remove()
-        delattr(self, 'plotslist')
+        self.plotslist = None
 
     def rotate_xtal(self, axis, degree=None):
         """
@@ -461,7 +461,7 @@ class LaueSimulation(object):
         self.xtal_rot = np.tensordot(rmat, self.xtal_rot, axes=(1, 0))
 
         ### update peak list ###
-        if hasattr(self, 'peaks_plot'):
+        if self.peaks_plot is not None:
             self.gen_peaks_to_plot()
             self.update_plots()
 
@@ -512,7 +512,7 @@ class LaueSimulation(object):
         detgeo.update_rmatrix()
 
         ### update peak list ###
-        if hasattr(self, 'peaks_plot'):
+        if self.peaks_plot is not None:
             self.gen_peaks_to_plot()
             self.update_plots()
 
@@ -535,7 +535,7 @@ class LaueSimulation(object):
         self.detgeos[idet].translation += v
 
         ### update peak list ###
-        if hasattr(self, 'peaks_plot'):
+        if self.peaks_plot is not None:
             self.gen_peaks_to_plot()
             self.update_plots()
 

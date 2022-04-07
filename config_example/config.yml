@@ -7,7 +7,7 @@ alt_id: ""
 ### General parameters
 substrate: Al2O3
 sample: Au
-show_plots: true
+show_plots: false
 verbose: true
 
 ### Image prep parameters (all start with "prep_")
