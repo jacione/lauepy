@@ -5,7 +5,7 @@ import lauepy.laue.make_grain_dict as grain
 
 
 @click.command()
-@click.argument('config')
+@click.argument('config', default='')
 def main(config):
     config = ut.read_config(config)
     sim = al.AutoLaue(config)

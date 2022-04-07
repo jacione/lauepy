@@ -4,7 +4,7 @@ import lauepy.laue.utils as ut
 
 
 @click.command()
-@click.argument('config')
+@click.argument('config', default='')
 def main(config):
     config = ut.read_config(config)
     prep.extract_substrate(config)

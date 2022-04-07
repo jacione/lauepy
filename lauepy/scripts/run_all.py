@@ -4,10 +4,6 @@ A general script for running the AutoLaue package.
 Written by Nick Porter
 jacioneportier@gmail.com
 """
-
-# Import the auto_laue, peaks, background_subtraction, make_grain_dict, and find_twins
-# maybe import tk for a simple GUI?....later!
-# For now, import click!!
 import click
 import lauepy.laue.image_prep as prep
 import lauepy.laue.utils as ut
@@ -17,7 +13,7 @@ import lauepy.laue.make_grain_dict as grain
 
 
 @click.command()
-@click.argument('config')
+@click.argument('config', default='')
 def main(config):
     config = ut.read_config(config)
     ut.purge(config)
