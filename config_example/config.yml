@@ -7,8 +7,8 @@ spec_seq: b  # There may be multiple spec files.
 beamline: 34idc
 
 ### General parameters
-calibration: calibration_000
-substrate: Al2O3
+calibration: 0
+substrate: Si
 sample: Au
 show_plots: false
 verbose: true
@@ -16,7 +16,7 @@ verbose: true
 ### Image prep parameters (all start with "prep_")
 prep_quantile: 0.5
 prep_gamma: 0.25
-prep_rb_radius: 0  # Use zero to determine automatically
+prep_rb_radius: # Leave blank to determine automatically
 prep_zero_fraction: 0.85
 prep_coefficient: 1000
 prep_gaussian_sigma: 50

@@ -14,7 +14,7 @@ def grain_to_spec(config):
 
     a, b, c, alpha, beta, gamma = crystal_params['lattice_params']
     a, b, c = a * 1e10, b * 1e10, c * 1e10
-    with open(f"{config['working_dir']}/grains/grain_dict.json") as f:
+    with open(f"{config['working_dir']}/grains/grains.json") as f:
         grain_dict = json.load(f)
     for grain in grain_dict:
         inp, outp = grain_dict[grain]['Spec_Orientation']

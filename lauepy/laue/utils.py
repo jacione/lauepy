@@ -74,7 +74,7 @@ def read_config(yml_file):
     if missing_keys:
         raise KeyError(f'The following required fields were not found in the config file: {missing_keys}')
 
-    # Create the working directory if needed
+    # Add the directories to the config dictionary
     year = cfg['year']
     exp_id = cfg['exp_id']
     scan = cfg['scan']
@@ -89,11 +89,13 @@ def read_config(yml_file):
     cfg['spec_file'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/{exp_id}{spec_seq}.spec"
     cfg['lauepy_dir'] = f'{Path(__file__).parents[1]}'
 
+    # Make sure the data and spec files can be found
     if not Path(cfg['data_dir']).exists():
         raise FileNotFoundError('Could not find the specified DATA DIRECTORY. Check config.')
     if not Path(cfg['spec_file']).exists():
         raise FileNotFoundError('Could not find the specified SPEC FILE. Check config')
 
+    # Load up the calibration data
     if cfg['calibration'] is None:
         cal = prompt_calibration()
         if 'n' not in input("Save this calibration for other datasets? (Y/n) ").lower():
@@ -106,15 +108,16 @@ def read_config(yml_file):
                     with open(f"{cal_path}", 'w') as f:
                         json.dump(cal, f)
                     txt = Path(yml_file).read_text()
-                    txt = re.compile('calibration:.*').sub(f'calibration: calibration_{count:0>3}', txt)
+                    txt = re.compile('calibration:.*').sub(f'calibration: {count}', txt)
                     Path(yml_file).write_text(txt)
                     break
     else:
-        with open(f'{Path(cfg["working_dir"]).parent}/{cfg["calibration"]}.json') as f:
+        with open(f'{Path(cfg["working_dir"]).parent}/calibration_{cfg["calibration"]:0>3}.json') as f:
             cal = json.load(f)
     for key, val in cal.items():
         cfg[key] = val
 
+    # Create the working directory if needed
     id_dir = Path(cfg['working_dir'])
     for subdir in ['', 'clean_images', 'peaks', 'substrate', 'grains']:
         d = id_dir / subdir

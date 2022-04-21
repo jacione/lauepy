@@ -122,6 +122,11 @@ def find_sample_peaks(config, peak_dict):
         print(f'Time to calculate: {end-start: 0.3} sec')
 
     if config['show_plots']:
+        plt.figure()
+        plt.imshow(img_stack[0])
+        c = np.array(peak_dict['frame_000']['coords']).T
+        plt.scatter(c[0], c[1], c='r')
+        plt.show()
         pass
 
     return peak_dict

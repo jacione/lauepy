@@ -38,7 +38,7 @@ def extract_substrate(config):
 
     # Rolling ball filter removes large-scale features (such as vignette)
     radius = config['prep_rb_radius']
-    if radius == 0:
+    if radius is None:
         radius = rb_radius(img)
     img = img - restoration.rolling_ball(img, radius=radius)
     
