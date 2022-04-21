@@ -3,6 +3,7 @@ scan: 516
 year: 2021
 exp_id: LauePUP1221
 alt_id: ""
+beamline: 34idc
 
 ### General parameters
 substrate: Al2O3
@@ -11,8 +12,9 @@ show_plots: false
 verbose: true
 
 ### Image prep parameters (all start with "prep_")
-prep_quantile: 0.01
+prep_quantile: 0.5
 prep_gamma: 0.25
+prep_rb_radius: 0  # Use zero to determine automatically
 prep_zero_fraction: 0.85
 prep_coefficient: 1000
 prep_gaussian_sigma: 50

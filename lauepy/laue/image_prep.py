@@ -11,7 +11,7 @@ import numpy as np
 import scipy.ndimage as ndi
 import tifffile
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
-from skimage import exposure
+from skimage import exposure, restoration
 from progressbar import progressbar as pbar
 
 
@@ -21,7 +21,6 @@ def extract_substrate(config):
     the issue of uneven features, we can adopt the cleanup_images method to remove uneven pattern. The rolling-ball
     algorithm estimates the background intensity of a grayscale image in case of uneven exposure.
 
-
     :param config: configuration parameters
     :type config: dict
     """
@@ -29,16 +28,20 @@ def extract_substrate(config):
     files = sorted(Path(config['data_dir']).iterdir())
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
 
-    # The median of all frames removes short-lived features (such as Laue peaks!)
+    # A quantile filter over all frames removes short-lived features (such as Laue peaks!)
+    # q=0.5 is a median filter
+    # q=0.0 is a minimum filter
+    # q=1.0 is a maximum filter
     img = np.quantile(img_stack, config['prep_quantile'], axis=0)
     img = remove_badpixel(img)
     img = exposure.adjust_gamma(img, config['prep_gamma'], np.mean(img))
 
     # Rolling ball filter removes large-scale features (such as vignette)
-    # img = img - restoration.rolling_ball(img, radius=config['prep_rolling_ball_radius'])
+    radius = config['prep_rb_radius']
+    if radius == 0:
+        radius = rb_radius(img)
+    img = img - restoration.rolling_ball(img, radius=radius)
     
-    # Gaussian filter is faster and has less noise - particularly around the edges.
-    img = img - ndi.gaussian_filter(img, config['prep_gaussian_sigma'])
     img[img < 0] = 0
     
     if config['show_plots']:
@@ -336,3 +339,62 @@ def get_peaklist(image, threshold_max=1000, threshold=3, minimal_pixel=5):
     return peak_dict
 
 
+def fraction_fct(x, raw_img):
+    remove_bad_pixel_bkg = raw_img
+    threshold_ls = 20
+
+    rolling_ball_bkg = restoration.rolling_ball(remove_bad_pixel_bkg,
+                                                radius=x)  # @##################### need to resolve
+
+    new_bkg = remove_bad_pixel_bkg - rolling_ball_bkg  # this is the new generated median background
+    new_bkg = remove_badpixel(new_bkg)  ### remove_badpixel() is a function in the python files.
+    #### fraction is the (𝑡ℎ𝑒 𝑛𝑢𝑚𝑏𝑒𝑟 𝑜𝑓 𝑝𝑖𝑥𝑒𝑙 𝑤ℎ𝑜𝑠𝑒 𝑖𝑛𝑡𝑒𝑛𝑠𝑖𝑡𝑦 𝑖𝑠 𝑏𝑒𝑙𝑜𝑤 𝑡ℎ𝑟𝑒𝑠ℎ𝑜𝑙𝑑  𝑖𝑛 𝑐𝑜𝑟𝑟𝑒𝑐𝑡𝑒𝑑 𝑖𝑚𝑎𝑔𝑒)/(𝑡ℎ𝑒 𝑛𝑢𝑚𝑏𝑒𝑟 𝑜𝑓 𝑎𝑙𝑙 𝑝𝑖𝑥𝑒𝑙𝑠)
+    fraction = len(np.where(new_bkg > threshold_ls)[0]) / (new_bkg.shape[0] * new_bkg.shape[1]) * 100
+    # print("fraction",fraction)
+    return fraction
+
+
+def derivative_fct(x, img):
+    # print("x",x)
+    x = x
+    dx_ = 5
+    dy_plus = fraction_fct(x + dx_, img)
+    dy_minus = fraction_fct(x - dx_, img)
+    # print("dx",dx.shape)
+    # print("dy",len(dy))
+    dydx = (dy_plus - dy_minus) / (2 * dx_)
+    # print(dydx.min())
+
+    return dydx
+
+
+def rb_radius(img):
+    p = 20
+    dp = 10
+    best_gradient = derivative_fct(p, img)
+
+    threshold = 1
+
+    while dp > threshold and 5 < p < 300:
+
+        p += dp
+        gradient = derivative_fct(p, img)
+        # print("gradient",gradient)
+        # print("p",p)
+        # print("dp",dp)
+        if gradient < best_gradient:  # There was some improvement
+            best_gradient = gradient
+            dp *= 1.1
+        else:  # There was no improvement
+            p -= 2 * dp  # Go into the other direction
+            gradient = derivative_fct(p, img)
+
+            if gradient < best_gradient:  # There was an improvement
+                best_gradient = gradient
+                dp *= 1.05
+            else:  # There was no improvement
+                p += dp
+                # As there was no improvement, the step size in either
+                # direction, the step size might simply be too big.
+                dp *= 0.95
+    return p
