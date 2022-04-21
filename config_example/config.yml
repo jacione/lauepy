@@ -1,11 +1,13 @@
 ### Title and directories
 scan: 516
-alt_id: ""
+alt_id:
 year: 2021
 exp_id: LauePUP1221
+spec_seq: b  # There may be multiple spec files.
 beamline: 34idc
 
 ### General parameters
+calibration: calibration_000
 substrate: Al2O3
 sample: Au
 show_plots: false
@@ -42,11 +44,3 @@ laue_sample_times: 1
 
 grain_tolerance: 0.5
 grain_threshold: 10000
-
-### Detector parameters (all start with "det_")
-# TODO have a separate workflow for detector calibration, then read in from output file
-det_rotation: [2.235803557314652, -0.011294793963117103, 2.2196066665966945]
-det_translation: [-1.5400214690949756, -31.02874070129578, -57.95072572716589]
-det_pixels: [1028, 512]
-det_pitch: [0.075, 0.075]
-det_name: "eiger"

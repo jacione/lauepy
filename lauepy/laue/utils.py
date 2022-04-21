@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 from tkinter import Tk, filedialog
 import re
+import json
 
 import numpy as np
 import yaml
@@ -25,7 +26,7 @@ def new_analyis():
     alt_id = ''
     work_dir = Path(f'{exp_dir}/Analysis/lauepy_output/scan_{scan:0>4}')
     if work_dir.exists():
-        if 'n' in input('Analysis of that scan already exists. Create another analysis? (Y/n): '):
+        if 'n' in input('Analysis of that scan already exists. Create another analysis? (Y/n): ').lower():
             return
         count = 0
         while work_dir.exists():
@@ -49,7 +50,6 @@ def file_prompt():
     root = Tk()
     root.withdraw()
     f = filedialog.askopenfilename()
-    assert f.endswith('.yml'), 'Configuration must be a *.yml file.'
     return f
 
 
@@ -79,16 +79,41 @@ def read_config(yml_file):
     exp_id = cfg['exp_id']
     scan = cfg['scan']
     alt_id = cfg['alt_id']
+    if alt_id is None:
+        alt_id = ''
+    spec_seq = cfg['spec_seq']
     cfg['working_dir'] = f"/home/beams7/CXDUSER/34idc-work/{year}/{exp_id}/Analysis/lauepy_output" \
                          f"/scan_{scan:04}{alt_id}"
-    cfg['data_dir'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/AD34idcLaue_{exp_id}a/{exp_id}a_S{scan:04}"
-    cfg['spec_file'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/{exp_id}a.spec"
+    cfg['data_dir'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/AD34idcLaue_{exp_id}{spec_seq}" \
+                      f"/{exp_id}{spec_seq}_S{scan:04}"
+    cfg['spec_file'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/{exp_id}{spec_seq}.spec"
     cfg['lauepy_dir'] = f'{Path(__file__).parents[1]}'
 
     if not Path(cfg['data_dir']).exists():
         raise FileNotFoundError('Could not find the specified DATA DIRECTORY. Check config.')
     if not Path(cfg['spec_file']).exists():
         raise FileNotFoundError('Could not find the specified SPEC FILE. Check config')
+
+    if cfg['calibration'] is None:
+        cal = prompt_calibration()
+        if 'n' not in input("Save this calibration for other datasets? (Y/n) ").lower():
+            count = 0
+            while True:
+                cal_path = Path(cfg['working_dir']).parent / f"calibration_{count:0>3}.json"
+                if cal_path.exists():
+                    count += 1
+                else:
+                    with open(f"{cal_path}", 'w') as f:
+                        json.dump(cal, f)
+                    txt = Path(yml_file).read_text()
+                    txt = re.compile('calibration:.*').sub(f'calibration: calibration_{count:0>3}', txt)
+                    Path(yml_file).write_text(txt)
+                    break
+    else:
+        with open(f'{Path(cfg["working_dir"]).parent}/{cfg["calibration"]}.json') as f:
+            cal = json.load(f)
+    for key, val in cal.items():
+        cfg[key] = val
 
     id_dir = Path(cfg['working_dir'])
     for subdir in ['', 'clean_images', 'peaks', 'substrate', 'grains']:
@@ -155,6 +180,19 @@ def purge(config):
             if not d.exists():
                 d.mkdir(parents=True)
     return
+
+
+def prompt_calibration():
+    with open(file_prompt(), 'r') as f:
+        data = json.load(f)
+    cal = {
+        'det_rotation': data['rot_vec'],
+        'det_translation': data['trans_vec'],
+        'det_pixels': data['pixels'][0:2],
+        'det_pitch': data['pixels'][2:4],
+        'det_name': data['det_name']
+    }
+    return cal
 
 
 if __name__ == '__main__':
