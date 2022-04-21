@@ -8,7 +8,7 @@ import json
 # inp - in-place vector
 # outp - out of place vector
 
-def write_orient(config):
+def grain_to_spec(config):
     with open(f'{config["lauepy_dir"]}/crystals/{config["sample"]}.json') as f:
         crystal_params = json.load(f)
 
@@ -49,3 +49,7 @@ def write_orient(config):
         f.write("U[\"29\"] = 20\n")
         f.write("calcG\n")
         f.close()
+
+
+def write_calibration():
+    pass

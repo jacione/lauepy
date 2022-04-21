@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 from tkinter import Tk, filedialog
+import re
 
 import numpy as np
 import yaml
@@ -10,6 +11,38 @@ from xrayutilities.io import spec
 example = Path(__file__).parents[2] / 'config_example/config.yml'
 with open(example, 'r') as F:
     REQUIRED = yaml.safe_load(F)
+
+
+def new_analyis():
+    print('New analysis...')
+    year = input('Year: ')
+    exp_id = input('Experiment ID (e.g. LauePUP422): ')
+    exp_dir = Path(f"/home/beams7/CXDUSER/34idc-work/{year}/{exp_id}")
+    if not exp_dir.exists():
+        print('Could not find experiment! Check that the ID matches your experiment directory name.')
+        return
+    scan = input('Scan number: ')
+    alt_id = ''
+    work_dir = Path(f'{exp_dir}/Analysis/lauepy_output/scan_{scan:0>4}')
+    if work_dir.exists():
+        if 'n' in input('Analysis of that scan already exists. Create another analysis? (Y/n): '):
+            return
+        count = 0
+        while work_dir.exists():
+            alt_id = chr(97 + count)
+            work_dir = work_dir.parent / f'scan_{scan:0>4}{alt_id}'
+            count += 1
+    work_dir.mkdir(parents=True)
+    txt = example.read_text()
+    txt = re.compile('scan:.*').sub(f'scan: {scan}', txt)
+    txt = re.compile('alt_id:.*').sub(f'alt_id: {alt_id}', txt)
+    txt = re.compile('year:.*').sub(f'year: {year}', txt)
+    txt = re.compile('exp_id:.*').sub(f'exp_id: {exp_id}', txt)
+    cfg = work_dir / 'config.yml'
+    cfg.touch()
+    cfg.write_text(txt)
+    print(f'Analysis folder created:\n\t{work_dir}')
+    return
 
 
 def file_prompt():
@@ -45,7 +78,9 @@ def read_config(yml_file):
     year = cfg['year']
     exp_id = cfg['exp_id']
     scan = cfg['scan']
-    cfg['working_dir'] = f"/home/beams7/CXDUSER/34idc-work/{year}/{exp_id}/Analysis/lauepy_output/scan_{scan:04}"
+    alt_id = cfg['alt_id']
+    cfg['working_dir'] = f"/home/beams7/CXDUSER/34idc-work/{year}/{exp_id}/Analysis/lauepy_output" \
+                         f"/scan_{scan:04}{alt_id}"
     cfg['data_dir'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/AD34idcLaue_{exp_id}a/{exp_id}a_S{scan:04}"
     cfg['spec_file'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/{exp_id}a.spec"
     cfg['lauepy_dir'] = f'{Path(__file__).parents[1]}'

@@ -4,7 +4,7 @@ import numpy as np
 
 import lauepy.laue.overlay_peaks as op
 from lauepy.laue.disorientation import calc_disorient, rmat_2_quat
-from lauepy.laue.write_specorient import write_orient
+from lauepy.laue.write_specorient import grain_to_spec
 
 
 def make_grain_dict(config):
@@ -92,7 +92,7 @@ def make_grain_dict(config):
         for pattern in draw_patts:
             op.overlay(config, pattern_dict[pattern], key)
             # print(output_directory,len(grains))
-    write_orient(config)
+    grain_to_spec(config)
     with open(f'{working_dir}/peaks/patterns.json', 'w') as json_file:
         json.dump(pattern_dict, json_file)
     return
