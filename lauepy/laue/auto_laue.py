@@ -233,7 +233,7 @@ class AutoLaue:
         peak_coords = np.array(frame_data['coords'])
         num_peaks = peak_coords.shape[0]
 
-        # FIXME are these magic numbers?
+        # FIXME are these just magic numbers, or are they physically determined?
         if (num_peaks - 10) <= self.comb_sub:
             r = num_peaks
             size = 1
