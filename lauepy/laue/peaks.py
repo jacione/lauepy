@@ -37,19 +37,27 @@ def find_substrate_peaks(config, peak_dict):
     """
     start = time.perf_counter()
 
+    # Set up the working directory
     working_dir = config['working_dir']
 
+    # Load the substrate-filtered image
     img = tifffile.imread(f'{working_dir}/substrate/substrate_peaks.tiff')
+
+    # Small median filter to remove any persistent noise
     img = ndi.median_filter(img, size=2)
 
+    # Set the parameters for the peak-finding
     threshold = np.mean(img) * config['pkid_substrate_threshold']
     min_dist = config['pkid_substrate_distance']
 
+    # Find the peaks using skimage.feature.peak_local_max
     peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
-    peak_coords = np.fliplr(peak_coords)
+    peak_coords = np.fliplr(peak_coords)  # This is so that they go more nicely into the following functions
 
+    # Save the substrate peaks to the peak dictionary
     peak_dict['substrate'] = {'coords': peak_coords.tolist(), 'num_peaks': peak_coords.shape[0]}
 
+    # Create a mask to block out the substrate peaks from the individual images
     structure = np.zeros((15, 15))
     structure[draw.disk((7, 7), 5.5)] = 1
     sub_mask = ndi.binary_dilation(img > threshold, structure=structure)
@@ -83,9 +91,11 @@ def find_sample_peaks(config, peak_dict):
 
     working_dir = config['working_dir']
 
+    # Load up the image files into a 3D numpy array
     files = sorted(Path(f"{working_dir}/clean_images").iterdir())
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
 
+    # Set the peak-finding parameters
     threshold = np.mean(img_stack) * config['pkid_sample_threshold']
     min_dist = config['pkid_sample_distance']
 
@@ -93,21 +103,31 @@ def find_sample_peaks(config, peak_dict):
     try:
         substrate_mask = np.load(f"{working_dir}/substrate/substrate_mask.npy")
     except FileNotFoundError:
+        # This should really never happen, but if the substrate peaks haven't been indexed, then the substrate mask
+        # won't exist. If that happens, then it just needs to run the substrate indexing routine before moving on.
         find_substrate_peaks(config, peak_dict)
         substrate_mask = np.load(f"{working_dir}/substrate/substrate_mask.npy")
+    # Extend the substrate mask to match the shape of the image stack
     substrate_mask = np.repeat(substrate_mask, img_stack.shape[0], axis=0)
 
+    # Apply the substrate mask onto the image stack
     img_stack = np.ma.array(img_stack, mask=substrate_mask)
 
+    # This loop does two things: (1) save the peaks into a dictionary where they are organized by frame, and (2) find
+    # the frame with the highest number of peaks, so that it can be plt.imshown later on.
+    max_frame = (0, 0)
     for frame, img in enumerate(img_stack):
         peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
         peak_dict[f'frame_{frame:03}'] = {
             'coords': np.fliplr(peak_coords).tolist(),
             'num_peaks': peak_coords.shape[0]
         }
+        if peak_coords.shape[0] > max_frame[1]:
+            max_frame = (frame, peak_coords.shape[0])
 
     end = time.perf_counter()
 
+    # Calculate the total number of peaks and average peaks per frame.
     total_peaks = np.sum([peak_dict[frame]["num_peaks"] for frame in peak_dict.keys()])
     mean_peaks = np.mean([peak_dict[frame]["num_peaks"] for frame in peak_dict.keys()])
 
@@ -122,9 +142,10 @@ def find_sample_peaks(config, peak_dict):
         print(f'Time to calculate: {end-start: 0.3} sec')
 
     if config['show_plots']:
+        # Mark & show the peaks on the frame with the most peaks.
         plt.figure()
-        plt.imshow(img_stack[0])
-        c = np.array(peak_dict['frame_000']['coords']).T
+        plt.imshow(img_stack[max_frame[0]])
+        c = np.array(peak_dict[f'frame_{max_frame[0]:03}']['coords']).T
         plt.scatter(c[0], c[1], c='r')
         plt.show()
         pass
@@ -143,6 +164,9 @@ def record_positions(config, peak_dict):
 
     peak_dict['info'] = {'angles': ut.read_spec_init(config, 'Phi', 'Chi', 'Theta').tolist()}
     return peak_dict
+
+
+# Below this line lives the old code. It's here in case we need it.
 
 
 def get_peak_coords(img, min_dist, threshold, border=10):
