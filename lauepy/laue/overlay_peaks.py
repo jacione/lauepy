@@ -33,5 +33,5 @@ def overlay(config, pattern, grain):
         plt.scatter(xs, ys, s=81, facecolors='none', edgecolors='r')
         plt.show()
 
-    tifffile.imsave(f"{config['working_dir']}/{grain}", raw_img.astype(np.float32))
+    tifffile.imsave(f"{config['working_dir']}/grains/{grain}.tiff", raw_img.astype(np.float32))
     return
