@@ -4,9 +4,6 @@ import tifffile as tifffile
 
 
 def overlay(config, pattern, grain):
-    ### pattern ####
-    print(grain)
-
     ### frames #####
     #     img_path = 'LANLPUP421a_S%04d'%scan
     frame = pattern['Center_Frame']

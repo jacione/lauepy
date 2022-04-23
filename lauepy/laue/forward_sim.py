@@ -631,16 +631,15 @@ class FastLaueSimulation_list(object):
         close
     """
 
-    def __init__(self, hkl, detgeos, xtal, xtalrotation=None):
+    def __init__(self, hkl_list, detgeos, xtal, xtalrotation=None):
         self.detgeos = []
         if isinstance(detgeos, geo.DetectorGeometry):
             self.detgeos.append(deepcopy(detgeos))
         elif isinstance(detgeos, collections.Sequence) and \
                 isinstance(detgeos[0], geo.DetectorGeometry):
             self.detgeos.extend(detgeos)
-
         # self.hkl=eulerparsehkl.extract_hkl(filename)
-        self.hkl = hkl
+        self.hkl = hkl_list
         self.peakpool = [Reflection(hkl) for hkl in self.hkl]
 
         assert isinstance(xtal, latt.Xtal)

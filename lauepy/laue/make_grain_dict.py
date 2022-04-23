@@ -4,10 +4,11 @@ import numpy as np
 
 import lauepy.laue.overlay_peaks as op
 from lauepy.laue.disorientation import calc_disorient, rmat_2_quat
-from lauepy.laue.write_specorient import grain_to_spec
+from lauepy.laue.write_macro import grain_to_macro
 
 
 def make_grain_dict(config):
+    print('Preparing to ')
     working_dir = config['working_dir']
     with open(f'{working_dir}/peaks/patterns.json', 'r') as f:
         pattern_dict = json.load(f)
@@ -65,34 +66,44 @@ def make_grain_dict(config):
         grains[grain]['Avg_Dist'] = float(np.round(np.mean(grains[grain]['Dist']), 4))
         grains[grain]['Avg_Peaks'] = float(np.round(np.mean(grains[grain]['Num_Peaks']), 1))
         grains[grain]['Avg_Count'] = float(np.round(np.mean(grains[grain]['Count']), 1))
-        #         an_array[numpy.argsort(an_array[:, 1])]
         pos = np.array(grains[grain]['Positions'])
         grains[grain]['COM'] = pos[np.argsort(pos[:, 0])][len(pos) // 2].tolist()
 
     with open(f'{working_dir}/grains/grains.json', 'w') as json_file:
         json.dump(grains, json_file)
-    # if not os.path.exists(working_dir):
-    #     os.mkdir(working_dir)
-    # else:
-    #     shutil.rmtree(working_dir)
-    #     os.mkdir(working_dir)
-    # if os.path.exists(working_dir + '/seg_stack.tif'):
-    #     os.remove(working_dir + '/seg_stack.tif')
-    # copyfile('seg_stack.tif', working_dir + '/seg_stack.tif')
 
     for key, grain in grains.items():
         if key == 'substrate':
             continue
         for patt in grain['Patts']:
             pattern_dict[patt]['Grain'] = grain
-        # print("g['Patts']",g['Patts'],"g['Positions']",g['Positions'],"g['COM']",g['COM'])
-        # med_patt = g['Patts'][g['Positions'].index(g['COM'])]
-        # print("med_patt",med_patt,"grain",grain)
         draw_patts = grain['Patts']
         for pattern in draw_patts:
             op.overlay(config, pattern_dict[pattern], key)
-            # print(output_directory,len(grains))
-    grain_to_spec(config)
+    grain_to_macro(config)
     with open(f'{working_dir}/peaks/patterns.json', 'w') as json_file:
         json.dump(pattern_dict, json_file)
+    if config['verbose']:
+        view_grains(grains)
     return
+
+
+def view_grains(grains):
+    print('################### GRAIN DICT #######################')
+    print(f'{"Grain":>12}{"RMS":>10}{"Peaks":>10}{"Dist":>10}{"Pstdev":>10}{"Frames":>10}')
+    for grain in grains:
+        g = grains[grain]
+        pos_std = np.mean(np.std(g['Positions'], axis=0))
+        num_frames = len(g['Frames'])
+        if num_frames > 1 and pos_std < 1:
+            goodness = np.log(num_frames * np.sqrt(g['Avg_Peaks']) / g['Avg_RMS'] / pos_std)
+            if goodness > 5:
+                print(f"{grain:>12}"
+                      f"{g['Avg_RMS']:>10}"
+                      f"{g['Avg_Peaks']:>10}"
+                      f"{round(g['Avg_Dist'], 1):>10}"
+                      f"{np.around(pos_std, 2):>10}"
+                      f"{num_frames:>10}"
+                      f"{np.around(goodness, 5):>11}"
+                      )
+

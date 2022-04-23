@@ -14,7 +14,7 @@ import lauepy.laue.forward_sim as fsim
 import lauepy.laue.spec as sp
 from lauepy.laue import image_prep
 from lauepy.laue import pflibs
-from lauepy.laue.write_specorient import grain_to_spec
+from lauepy.laue.write_macro import grain_to_macro
 from lauepy.rxlibs.xmd34 import geometry as geo
 from lauepy.rxlibs.xmd34 import lattice as latt
 

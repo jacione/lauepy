@@ -14,6 +14,7 @@ import numpy as np
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
+from matplotlib import pyplot as plt
 
 import lauepy.laue.forward_sim as fsim
 import lauepy.laue.peaks as pk
@@ -185,7 +186,7 @@ class AutoLaue:
         # TODO: put the euler program for linux/mac/windows in the same directory and select based on current OS
         sub.call([
             f'{self.config["lauepy_dir"]}/scripts/eulerlinux',
-            '-k', '24',
+            '-k', '16',
             '-t', '24',
             '-c', '72',
             '-a', f'{self.tolerance}',
@@ -328,7 +329,7 @@ class AutoLaue:
                     'Count': conf,
                     'RMS': float(np.mean(rms)),
                     'Num_Peaks': float(np.mean(num_peaks)),
-                    'Pos': frame_data['lab_xyz'],
+                    'Pos': frame_data['positions'],
                     'xys': xys[np.argmax(blah)]
                 }
 
@@ -355,7 +356,7 @@ class AutoLaue:
         xtalsimu = fsim.FastLaueSimulation_list(hkl_labels, self.geo_ccd, self.xtal, xtal_rmat)
         xtalsimu.gen_det_peaks()
         peak_list_r = np.array(xy_exp)
-        # pritn(peak_list_r)
+        # print(peak_list_r)
         peak_list_f = [xy for xy in zip(xtalsimu.xs, xtalsimu.ys)]
 
         # print(peak_list_f)

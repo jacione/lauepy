@@ -76,7 +76,7 @@ def find_substrate_peaks(config, peak_dict):
 
     if config['show_plots']:
         plt.figure()
-        plt.imshow(img, vmax=100)
+        plt.imshow(img)
         plt.scatter(peak_coords[:, 0], peak_coords[:, 1], edgecolor='red', facecolor='None', s=160)
         plt.figure()
         plt.imshow(sub_mask)
@@ -146,7 +146,7 @@ def find_sample_peaks(config, peak_dict):
         plt.figure()
         plt.imshow(img_stack[max_frame[0]])
         c = np.array(peak_dict[f'frame_{max_frame[0]:03}']['coords']).T
-        plt.scatter(c[0], c[1], c='r')
+        plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
         plt.show()
         pass
 
@@ -154,13 +154,13 @@ def find_sample_peaks(config, peak_dict):
 
 
 def record_positions(config, peak_dict):
-    spec_positions = ut.read_spec_log(config, 'Lab_X', 'Lab_Y', 'Lab_Z')
+    spec_positions = ut.read_spec_log(config)
 
     for frame, frame_data in peak_dict.items():
         if frame.startswith('frame_'):
-            frame_data['lab_xyz'] = list(spec_positions[int(frame[-3:])])
+            frame_data['positions'] = list(spec_positions[int(frame[-3:])])
         elif frame == 'substrate':
-            frame_data['lab_xyz'] = [0, 0, 0]
+            frame_data['positions'] = [0, 0, 0, 0, 0, 0]
 
     peak_dict['info'] = {'angles': ut.read_spec_init(config, 'Phi', 'Chi', 'Theta').tolist()}
     return peak_dict

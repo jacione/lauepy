@@ -8,7 +8,7 @@ import json
 # inp - in-place vector
 # outp - out of place vector
 
-def grain_to_spec(config):
+def grain_to_macro(config):
     with open(f'{config["lauepy_dir"]}/crystals/{config["sample"]}.json') as f:
         crystal_params = json.load(f)
 

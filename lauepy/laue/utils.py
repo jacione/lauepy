@@ -13,6 +13,8 @@ example = Path(__file__).parents[2] / 'config_example/config.yml'
 with open(example, 'r') as F:
     REQUIRED = yaml.safe_load(F)
 
+SPEC_KEYS = ['Piezo_X', 'Piezo_Y', 'Piezo_Z', 'Lab_X', 'Lab_Y', 'Lab_Z',]
+
 
 def new_analyis():
     print('New analysis...')
@@ -127,22 +129,21 @@ def read_config(yml_file):
     return cfg
 
 
-def read_spec_log(config, *keys):
+def read_spec_log(config):
     """
     Reads the positions of a single motor for every frame in a scan.
 
     :param config: configuration dictionary
     :type config: dict
-    :param keys: motor name
-    :type keys: str
     :return: array of shape (N,) where N is the number of frames in the scan
     :rtype: ndarray
     """
     # The (scan - 1) indexing is needed because the spec file starts at scan 1 (not zero)
     scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
     scan.ReadData()
-    arr = np.empty((scan.data.shape[0], len(keys)))
-    for i, key in enumerate(keys):
+    arr = np.empty((scan.data.shape[0], len(SPEC_KEYS)))
+
+    for i, key in enumerate(SPEC_KEYS):
         try:
             # Try to find the key in the column headers of the spec table.
             arr[:, i] = np.array(scan.data[key])
