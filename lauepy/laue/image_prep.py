@@ -24,6 +24,7 @@ def extract_substrate(config):
     :param config: configuration parameters
     :type config: dict
     """
+    return
     print('Extracting substrate-only image...')
     files = sorted(Path(config['data_dir']).iterdir())
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
@@ -38,11 +39,17 @@ def extract_substrate(config):
 
     # Rolling ball filter removes large-scale features (such as vignette)
     # radius = config['prep_rb_radius']
-    # if radius is None:
-    #     radius = rb_radius(img)
-    # img = img - restoration.rolling_ball(img, radius=radius)
+    # if Path(f"{config['working_dir']}/substrate/background.tiff").exists():
+    #     rb_img = tifffile.imread(f"{config['working_dir']}/substrate/rb_background.tiff")
+    # else:
+    #     if radius is None:
+    #         radius = rb_radius(img)
+    #     print(radius)
+    #     rb_img = restoration.rolling_ball(img, radius=radius)
+    #     tifffile.imsave(f"{config['working_dir']}/substrate/rb_background.tiff", rb_img)
+    # img = img - rb_img
     img = img - ndi.gaussian_filter(img, config['prep_gaussian_sigma'])
-    
+
     img[img < 0] = 0
     
     if config['show_plots']:
@@ -69,34 +76,42 @@ def cleanup_images(config):
 
     files = sorted(Path(config['data_dir']).iterdir())
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
-    
+    # img_stack = img_stack[163:166]
+
+    def showit():
+        plt.figure()
+        plt.imshow(img_stack[1], vmax=np.quantile(img_stack[1], 0.999))
+        plt.show()
+
     t0 = time.perf_counter()
 
     print('Removing bad pixels...')
     for i, img in enumerate(pbar(img_stack)):
         # Remove bad pixels
         img_stack[i] = remove_badpixel(img)
-    
+
     # Compress the dynamic range slightly
     print('Adjusting dynamic range...')
-    img_stack = np.clip(img_stack, 0, np.quantile(img_stack, 0.999))
-    img_stack = exposure.adjust_gamma(img_stack, config['prep_gamma'], np.mean(img_stack))
-    
+    img_stack = np.clip(img_stack, 0, np.quantile(img_stack, 0.9999))
+
     # Normalize the intensity of each image
     print('Normalizing intensity...')
     coeff = config['prep_coefficient'] / np.mean(img_stack, axis=(1, 2))[:, None, None]
     zero_point = np.quantile(img_stack, config['prep_zero_fraction'], axis=(1, 2))[:, None, None]
     img_stack = (img_stack - zero_point) * coeff
-    
+
     # Subtract the broad features
     print('Subtracting background features...')
     sigma = (0, config['prep_gaussian_sigma'], config['prep_gaussian_sigma'])
     img_stack = img_stack - ndi.gaussian_filter(img_stack, sigma=sigma)
-    
+
     # Suppress salt & pepper noise
     print('Denoising...')
-    img_stack = ndi.gaussian_filter(img_stack, sigma=(0, 1, 1))
-    img_stack[img_stack < 0] = 0
+    masked = np.ma.array(img_stack, mask=img_stack <= 0)
+    threshold = masked.mean(axis=(1, 2)) + 0.25*masked.std(axis=(1, 2))
+    img_stack[img_stack < threshold[:, np.newaxis, np.newaxis]] = 0
+    img_stack = ndi.median_filter(img_stack, size=(1, 3, 3))
+    showit()
     
     print('Saving cleaned-up images...')
     for i, img in enumerate(pbar(img_stack)):

@@ -10,13 +10,18 @@ import json
 
 def grain_to_macro(config):
     with open(f'{config["lauepy_dir"]}/crystals/{config["sample"]}.json') as f:
-        crystal_params = json.load(f)
+        sample_params = json.load(f)
+    with open(f'{config["lauepy_dir"]}/crystals/{config["substrate"]}.json') as f:
+        substrate_params = json.load(f)
 
-    a, b, c, alpha, beta, gamma = crystal_params['lattice_params']
-    a, b, c = a * 1e10, b * 1e10, c * 1e10
     with open(f"{config['working_dir']}/grains/grains.json") as f:
         grain_dict = json.load(f)
     for grain in grain_dict:
+        if str(grain) == 'substrate':
+            a, b, c, alpha, beta, gamma = substrate_params['lattice_params']
+        else:
+            a, b, c, alpha, beta, gamma = sample_params['lattice_params']
+        a, b, c = a * 1e10, b * 1e10, c * 1e10
         inp, outp = grain_dict[grain]['Spec_Orientation']
         filename = f"{config['working_dir']}/grains/{grain}.mac"
 

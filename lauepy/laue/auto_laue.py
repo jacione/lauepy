@@ -43,6 +43,7 @@ class AutoLaue:
         self.working_dir = config['working_dir']
         self.peak_dict = pk.load_peaks(config)
         self.phichitheta = self.peak_dict['info']['angles']
+        self.phichitheta[1] = 100.0
 
         self.times = None
         self.comb_sub = None
@@ -249,12 +250,10 @@ class AutoLaue:
         print(f"{size} random combinations containing {r} peaks")
 
         reduced_list = []
-        count_index = 0
-        for ind in indices:
+        for count_index, ind in enumerate(indices):
             gvectors = np.array(frame_data['G_vectors'])[ind]
 
             self.write_mat_params(gvectors)
-            count_index += 1
             self.run_euler()
 
             found_patts = self.extract_vals()
@@ -270,6 +269,9 @@ class AutoLaue:
 
                 No = True
                 if len(reduced_list) != 0:
+                    print("Hey hey look at me!!!!!!!")
+                    print(len(reduced_list))
+
                     q1s = np.array([rtm1 for _ in reduced_list])
 
                     q2s = np.array([r[4] for r in reduced_list])
@@ -359,6 +361,10 @@ class AutoLaue:
         # print(peak_list_r)
         peak_list_f = [xy for xy in zip(xtalsimu.xs, xtalsimu.ys)]
 
+        # plt.figure()
+        # plt.scatter(peak_list_r[:, 0], peak_list_r[:, 1], c='k', label='Experimental')
+        # plt.scatter(xtalsimu.xs, xtalsimu.ys, edgecolor='red', facecolor='None', s=160, label='Simulated')
+        # plt.show()
         # print(peak_list_f)
         d = cdist(peak_list_f, peak_list_r, metric='euclidean')
         indx_min = np.argmin(d, axis=1)

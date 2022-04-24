@@ -14,6 +14,7 @@ from scipy.ndimage.measurements import label, center_of_mass
 from scipy.spatial.distance import cdist
 from skimage.feature import peak_local_max
 from skimage import draw
+from progressbar import progressbar as pbar
 
 import lauepy.laue.forward_sim as fsim
 from lauepy.rxlibs.xmd34 import geometry as geo
@@ -47,7 +48,7 @@ def find_substrate_peaks(config, peak_dict):
     img = ndi.median_filter(img, size=2)
 
     # Set the parameters for the peak-finding
-    threshold = np.mean(img) * config['pkid_substrate_threshold']
+    threshold = np.std(img) * config['pkid_substrate_threshold']
     min_dist = config['pkid_substrate_distance']
 
     # Find the peaks using skimage.feature.peak_local_max
@@ -61,6 +62,10 @@ def find_substrate_peaks(config, peak_dict):
     structure = np.zeros((15, 15))
     structure[draw.disk((7, 7), 5.5)] = 1
     sub_mask = ndi.binary_dilation(img > threshold, structure=structure)
+    sub_mask[254:258] = True
+    sub_mask[:, 254:258] = True
+    sub_mask[:, 512:516] = True
+    sub_mask[:, 770:774] = True
     np.save(f"{working_dir}/substrate/substrate_mask.npy", np.array([sub_mask]))
 
     end = time.perf_counter()
@@ -96,7 +101,7 @@ def find_sample_peaks(config, peak_dict):
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
 
     # Set the peak-finding parameters
-    threshold = np.mean(img_stack) * config['pkid_sample_threshold']
+    threshold = np.std(img_stack) * config['pkid_sample_threshold']
     min_dist = config['pkid_sample_distance']
 
     # Load the mask from the substrate
@@ -115,15 +120,12 @@ def find_sample_peaks(config, peak_dict):
 
     # This loop does two things: (1) save the peaks into a dictionary where they are organized by frame, and (2) find
     # the frame with the highest number of peaks, so that it can be plt.imshown later on.
-    max_frame = (0, 0)
     for frame, img in enumerate(img_stack):
         peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
         peak_dict[f'frame_{frame:03}'] = {
             'coords': np.fliplr(peak_coords).tolist(),
             'num_peaks': peak_coords.shape[0]
         }
-        if peak_coords.shape[0] > max_frame[1]:
-            max_frame = (frame, peak_coords.shape[0])
 
     end = time.perf_counter()
 
@@ -141,14 +143,22 @@ def find_sample_peaks(config, peak_dict):
         print(f'Avg peaks per frame: {mean_peaks}')
         print(f'Time to calculate: {end-start: 0.3} sec')
 
-    if config['show_plots']:
-        # Mark & show the peaks on the frame with the most peaks.
-        plt.figure()
-        plt.imshow(img_stack[max_frame[0]])
-        c = np.array(peak_dict[f'frame_{max_frame[0]:03}']['coords']).T
+    print("Overlaying peaks...")
+    plot_dir = Path(f"{config['working_dir']}/peaks/overlays")
+    if plot_dir.exists():
+        for p in plot_dir.iterdir():
+            p.unlink()
+    else:
+        plot_dir.mkdir()
+    plt.figure(tight_layout=True, figsize=(10, 5), dpi=150)
+    for i, frame in enumerate(pbar(img_stack)):
+        plt.cla()
+        c = np.array(peak_dict[f'frame_{i:03}']['coords']).T
+        if not len(c):
+            continue
+        plt.imshow(frame, vmax=np.quantile(frame, 0.99))
         plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
-        plt.show()
-        pass
+        plt.savefig(f"{plot_dir}/frame_{i:0>4}.png")
 
     return peak_dict
 

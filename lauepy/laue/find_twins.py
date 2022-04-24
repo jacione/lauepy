@@ -23,7 +23,7 @@ def find_possible_twins(grain_dict_path, ang_tol=0.1):
     misorientation = calc_disorient(q1, q2)
     good_ind = np.where(np.absolute(misorientation - 60) < ang_tol)[0]
     inds = np.array([comb[g] for g in good_ind])
-    print(len(inds))
+    print(inds)
     with open('possible_twins.txt', 'w') as file:
         for i in inds:
             file.write("%d %d \n" % tuple(i))
@@ -52,7 +52,7 @@ def find_twins(in_dict, in_inds, out_file, deg=0, ax_tol=0.1):
         for e in es:
             file.write('\n%s %s %s %s %s %s' % tuple(e))
 
-    angle_calculator = Path(__file__).resolve().parents[1] / 'a.out'
+    angle_calculator = Path(__file__).resolve().parents[0] / 'a.out'
     sub.run([f'{angle_calculator}', '0', '1', '1', '0', 'angle_list.txt'])
     data = np.loadtxt('min-misor-angles.txt', skiprows=1)
     if len(list(data.shape)) == 1:

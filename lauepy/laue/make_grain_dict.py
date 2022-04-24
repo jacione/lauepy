@@ -8,7 +8,7 @@ from lauepy.laue.write_macro import grain_to_macro
 
 
 def make_grain_dict(config):
-    print('Preparing to ')
+    print('Grouping patterns into grains...')
     working_dir = config['working_dir']
     with open(f'{working_dir}/peaks/patterns.json', 'r') as f:
         pattern_dict = json.load(f)
@@ -90,20 +90,17 @@ def make_grain_dict(config):
 
 def view_grains(grains):
     print('################### GRAIN DICT #######################')
-    print(f'{"Grain":>12}{"RMS":>10}{"Peaks":>10}{"Dist":>10}{"Pstdev":>10}{"Frames":>10}')
+    print(f'{"Grain":>12}{"RMS":>10}{"Peaks":>10}{"Dist":>10}{"Pstdev":>10}{"Frames":>10}{"HKL":>10}')
     for grain in grains:
         g = grains[grain]
         pos_std = np.mean(np.std(g['Positions'], axis=0))
         num_frames = len(g['Frames'])
-        if num_frames > 1 and pos_std < 1:
-            goodness = np.log(num_frames * np.sqrt(g['Avg_Peaks']) / g['Avg_RMS'] / pos_std)
-            if goodness > 5:
-                print(f"{grain:>12}"
-                      f"{g['Avg_RMS']:>10}"
-                      f"{g['Avg_Peaks']:>10}"
-                      f"{round(g['Avg_Dist'], 1):>10}"
-                      f"{np.around(pos_std, 2):>10}"
-                      f"{num_frames:>10}"
-                      f"{np.around(goodness, 5):>11}"
-                      )
-
+        hkl = g['Spec_Orientation'][1]
+        print(f"{grain:>12}"
+              f"{g['Avg_RMS']:>10}"
+              f"{g['Avg_Peaks']:>10}"
+              f"{round(g['Avg_Dist'], 1):>10}"
+              f"{np.around(pos_std, 2):>10}"
+              f"{num_frames:>8}"
+              f"         [{round(hkl[0], 2):>6}{round(hkl[1], 2):>8}{round(hkl[2], 2):>8} ]"
+              )

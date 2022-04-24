@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 import lauepy.laue.auto_laue as al
 import lauepy.laue.utils as ut
@@ -8,6 +10,9 @@ import lauepy.laue.make_grain_dict as grain
 @click.argument('config', default='')
 def main(config):
     config = ut.read_config(config)
+    p = Path(f"{config['working_dir']}/grains")
+    for f in p.iterdir():
+        f.unlink()
     sim = al.AutoLaue(config)
     sim.index()
     grain.make_grain_dict(config)

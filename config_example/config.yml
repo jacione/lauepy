@@ -3,10 +3,12 @@ scan: 516
 alt_id:
 year: 2021
 exp_id: LauePUP1221
-spec_seq: b  # There may be multiple spec files.
+# spec_seq is a unique identifier if there are multiple spec files for the same experiment
+spec_seq: b
 beamline: 34idc
 
 ### General parameters
+# Leave calibration blank to select a file manually
 calibration: 0
 substrate: Si
 sample: Au
@@ -15,16 +17,17 @@ verbose: true
 
 ### Image prep parameters (all start with "prep_")
 prep_quantile: 0.5
-prep_gamma: 0.25
-prep_rb_radius: # Leave blank to determine automatically
-prep_zero_fraction: 0.85
+prep_gamma: 1.0
+# Leave the rb_radius blank to determine automatically
+prep_rb_radius:
+prep_zero_fraction: 0.95
 prep_coefficient: 1000
 prep_gaussian_sigma: 50
 
 ### Peak-indexing parameters (all start with "pkid_")
-pkid_substrate_threshold: 10
+pkid_substrate_threshold: 9
 pkid_substrate_distance: 25
-pkid_sample_threshold: 5
+pkid_sample_threshold: 9
 pkid_sample_distance: 10
 
 ### Laue analysis parameters (all start with "laue_")
@@ -37,7 +40,7 @@ laue_substrate_times: 1
 
 laue_sample_goodness: 0
 laue_sample_mis_err: 0.5
-laue_sample_tolerance: 0.3
+laue_sample_tolerance: 0.1
 laue_sample_frequency: 0
 laue_sample_comb_sub: 0
 laue_sample_times: 1
