@@ -261,7 +261,7 @@ class AutoLaue:
             for patts in found_patts:
                 hkls, gs, rmat, rlv, goodness, rms = patts
                 phi, chi, theta = self.phichitheta
-                spec_ori = so.transform(rlv, phi, chi, theta)
+                spec_ori = so.transform(rlv.T, phi, chi, theta)
                 ids = np.array([self.indx(g, gvectors) for g in gs])
                 rtm1 = rmat
 
@@ -269,9 +269,6 @@ class AutoLaue:
 
                 No = True
                 if len(reduced_list) != 0:
-                    print("Hey hey look at me!!!!!!!")
-                    print(len(reduced_list))
-
                     q1s = np.array([rtm1 for _ in reduced_list])
 
                     q2s = np.array([r[4] for r in reduced_list])

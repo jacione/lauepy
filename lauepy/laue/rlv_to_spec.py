@@ -5,8 +5,7 @@ from scipy.spatial.transform import Rotation
 def rot(data, axis, angle):
     for n in range(len(axis)):
         r = Rotation.from_euler(axis[n], angle[n], degrees=True).as_matrix()
-        data = r @ data
-        data = data.T
+        data = data @ r.T
     return data
 
 
