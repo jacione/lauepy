@@ -121,7 +121,7 @@ def read_config(yml_file):
 
     # Create the working directory if needed
     id_dir = Path(cfg['working_dir'])
-    for subdir in ['', 'clean_images', 'peaks', 'substrate', 'grains']:
+    for subdir in ['', 'clean_images', 'peaks', 'substrate', 'grains', 'twins']:
         d = id_dir / subdir
         if not d.exists():
             d.mkdir(parents=True)

@@ -20,14 +20,14 @@ prep_quantile: 0.5
 prep_gamma: 1.0
 # Leave the rb_radius blank to determine automatically
 prep_rb_radius:
-prep_zero_fraction: 0.95
+prep_zero_fraction: 0.90
 prep_coefficient: 1000
 prep_gaussian_sigma: 50
 
 ### Peak-indexing parameters (all start with "pkid_")
-pkid_substrate_threshold: 9
+pkid_substrate_threshold: 0.4
 pkid_substrate_distance: 25
-pkid_sample_threshold: 9
+pkid_sample_threshold: 0.4
 pkid_sample_distance: 10
 
 ### Laue analysis parameters (all start with "laue_")
@@ -45,5 +45,7 @@ laue_sample_frequency: 0
 laue_sample_comb_sub: 0
 laue_sample_times: 1
 
-grain_tolerance: 0.5
+grain_tolerance: 1.0
 grain_threshold: 10000
+
+twin_tolerance: 0.1
