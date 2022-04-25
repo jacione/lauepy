@@ -21,6 +21,7 @@ def main(config):
     if 'n' not in input('Run twin finding? (Y/n)').lower():
         if twins.find_possible_twins(config):
             twins.find_twins(config)
+            twins.cleanup_directory()
 
 
 if __name__ == '__main__':

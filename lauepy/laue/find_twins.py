@@ -79,3 +79,19 @@ def find_twins(config):
         for i, tw in enumerate(twin_orientations):
             file.write('\n%s %s %.2f %.3f %.3f %.3f' % (id_pairs[i] + tuple(tw)))
     return
+
+
+def cleanup_directory():
+    intermediate_files = [
+        "min-misor-angles.txt",
+        "misor-angles-pairs.txt",
+        "OutputForAnalysis.txt",
+        "possible_twins.txt",
+        "rexgbs_Eulers.wts",
+        "rexgbs_misors.mdf",
+        "rexgbs_misors_forward.mdf",
+        "rexgbs_output.txt"
+    ]
+    main_dir = Path(__file__)
+    for f in intermediate_files:
+        (main_dir / f).unlink(missing_ok=True)
