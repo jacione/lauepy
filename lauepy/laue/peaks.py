@@ -122,7 +122,7 @@ def find_sample_peaks(config, peak_dict):
     # the frame with the highest number of peaks, so that it can be plt.imshown later on.
     for frame, img in enumerate(img_stack):
         peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
-        peak_dict[f'frame_{frame:03}'] = {
+        peak_dict[f'frame_{frame:05}'] = {
             'coords': np.fliplr(peak_coords).tolist(),
             'num_peaks': peak_coords.shape[0]
         }
@@ -153,12 +153,12 @@ def find_sample_peaks(config, peak_dict):
     plt.figure(tight_layout=True, figsize=(10, 5), dpi=150)
     for i, frame in enumerate(pbar(img_stack)):
         plt.cla()
-        c = np.array(peak_dict[f'frame_{i:03}']['coords']).T
+        c = np.array(peak_dict[f'frame_{i:05}']['coords']).T
         if not len(c):
             continue
         plt.imshow(frame, vmax=np.quantile(frame, 0.99))
         plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
-        plt.savefig(f"{plot_dir}/frame_{i:0>4}.png")
+        plt.savefig(f"{plot_dir}/frame_{i:0>5}.png")
 
     return peak_dict
 
