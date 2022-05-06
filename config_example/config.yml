@@ -12,8 +12,8 @@ beamline: 34idc
 calibration: 0
 substrate: SrTiO3
 sample: Au
-show_plots: 0
-verbose: 1
+show_plots: True
+verbose: False
 
 ### Image prep parameters (all start with "prep_")
 prep_quantile: 0.5
