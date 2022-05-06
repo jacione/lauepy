@@ -86,7 +86,6 @@ def cleanup_directory():
         "min-misor-angles.txt",
         "misor-angles-pairs.txt",
         "OutputForAnalysis.txt",
-        "possible_twins.txt",
         "rexgbs_Eulers.wts",
         "rexgbs_misors.mdf",
         "rexgbs_misors_forward.mdf",
@@ -94,4 +93,4 @@ def cleanup_directory():
     ]
     main_dir = Path(__file__)
     for f in intermediate_files:
-        (main_dir / f).unlink(missing_ok=True)
+        (main_dir.parents[1] / f"scripts/{f}").unlink()

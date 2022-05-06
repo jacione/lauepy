@@ -13,23 +13,24 @@ example = Path(__file__).parents[2] / 'config_example/config.yml'
 with open(example, 'r') as F:
     REQUIRED = yaml.safe_load(F)
 
-SPEC_KEYS = ['Piezo_X', 'Piezo_Y', 'Piezo_Z', 'Lab_X', 'Lab_Y', 'Lab_Z',]
+SPEC_KEYS = ['Piezo_X', 'Piezo_Y', 'Piezo_Z', 'Lab_X', 'Lab_Y', 'Lab_Z']
 
 
-def new_analyis():
+def new_analyis(entries=None):
     print('New analysis...')
-    year = input('Year: ')
-    exp_id = input('Experiment ID (e.g. LauePUP422): ')
+    if entries is None:
+        year = input('Year: ')
+        exp_id = input('Experiment ID (e.g. LauePUP422): ')
+        scan = input('Scan number: ')
+    else:
+        year, exp_id, scan = entries
     exp_dir = Path(f"/home/beams7/CXDUSER/34idc-work/{year}/{exp_id}")
     if not exp_dir.exists():
         print('Could not find experiment! Check that the ID matches your experiment directory name.')
         return
-    scan = input('Scan number: ')
     alt_id = ''
     work_dir = Path(f'{exp_dir}/Analysis/lauepy_output/scan_{scan:0>4}')
     if work_dir.exists():
-        if 'n' in input('Analysis of that scan already exists. Create another analysis? (Y/n): ').lower():
-            return
         count = 0
         while work_dir.exists():
             alt_id = chr(97 + count)
@@ -45,7 +46,7 @@ def new_analyis():
     cfg.touch()
     cfg.write_text(txt)
     print(f'Analysis folder created:\n\t{work_dir}')
-    return
+    return str(cfg)
 
 
 def file_prompt():
@@ -127,6 +128,15 @@ def read_config(yml_file):
             d.mkdir(parents=True)
 
     return cfg
+
+
+def save_config(cfg, yml_file):
+    f = Path(yml_file)
+    text = f.read_text()
+    for key, val in cfg.items():
+        text = re.compile(f'{key}:.*').sub(f'{key}: {val}', text)
+    f.write_text(text)
+    return
 
 
 def read_spec_log(config):

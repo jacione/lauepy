@@ -19,9 +19,6 @@ def overlay(config, pattern, grain):
     if config['show_plots']:
         plt.figure(figsize=[16, 10])
         plt.subplot(1, 2, 1)
-        plt.title(f"raw_img_scan_{pattern:05}, {pattern['Goodness']}, {pattern['Dist']}, {pattern['RMS']}, "
-                  f"{pattern['Num_Peaks']}, {np.int32(np.round(pattern['Spec_Orientation'], 0)).tolist()}, "
-                  f"{np.round(pattern['Pos'], 3)}")
         plt.imshow(raw_img, vmin=0, vmax=config['grain_threshold'], origin='upper')
         plt.scatter(xs, ys, s=81, facecolors='none', edgecolors='r')
         plt.subplot(1, 2, 2)

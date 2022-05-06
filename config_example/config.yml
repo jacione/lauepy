@@ -1,6 +1,6 @@
 ### Title and directories
-scan: 516
-alt_id:
+scan: 939
+alt_id: None
 year: 2021
 exp_id: LauePUP1221
 # spec_seq is a unique identifier if there are multiple spec files for the same experiment
@@ -10,17 +10,17 @@ beamline: 34idc
 ### General parameters
 # Leave calibration blank to select a file manually
 calibration: 0
-substrate: Si
+substrate: SrTiO3
 sample: Au
-show_plots: false
-verbose: true
+show_plots: 0
+verbose: 1
 
 ### Image prep parameters (all start with "prep_")
 prep_quantile: 0.5
 prep_gamma: 1.0
 # Leave the rb_radius blank to determine automatically
-prep_rb_radius:
-prep_zero_fraction: 0.90
+prep_rb_radius: None
+prep_zero_fraction: 0.9
 prep_coefficient: 1000
 prep_gaussian_sigma: 50
 

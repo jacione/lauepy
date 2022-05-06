@@ -107,7 +107,7 @@ def cleanup_images(config):
     # Suppress salt & pepper noise
     print('Denoising...')
     masked = np.ma.array(img_stack, mask=img_stack <= 0)
-    threshold = masked.mean(axis=(1, 2)) + 0.1*masked.std(axis=(1, 2))
+    threshold = masked.mean(axis=(1, 2)) + 0.05*masked.std(axis=(1, 2))
     img_stack[img_stack < threshold[:, np.newaxis, np.newaxis]] = 0
     img_stack = ndi.median_filter(img_stack, size=(1, 3, 3))
 

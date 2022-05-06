@@ -305,8 +305,10 @@ class AutoLaue:
 
         for frame, frame_data in self.peak_dict.items():
             if frame.startswith('frame_'):
-                i = int(frame[-5:])  # The frame number should be the last 3 characters in the dictionary key
+                i = int(frame[-5:])  # The frame number should be the last 5 characters in the dictionary key
                 print(f'Indexing frame {i}')
+                if frame_data['num_peaks'] < 3:
+                    continue
             elif frame == 'substrate':
                 i = -1
                 print('Indexing substrate')

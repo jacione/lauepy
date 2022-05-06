@@ -143,22 +143,22 @@ def find_sample_peaks(config, peak_dict):
         print(f'Avg peaks per frame: {mean_peaks}')
         print(f'Time to calculate: {end-start: 0.3} sec')
 
-    print("Overlaying peaks...")
-    plot_dir = Path(f"{config['working_dir']}/peaks/overlays")
-    if plot_dir.exists():
-        for p in plot_dir.iterdir():
-            p.unlink()
-    else:
-        plot_dir.mkdir()
-    plt.figure(tight_layout=True, figsize=(10, 5), dpi=150)
-    for i, frame in enumerate(pbar(img_stack)):
-        plt.cla()
-        c = np.array(peak_dict[f'frame_{i:05}']['coords']).T
-        if not len(c):
-            continue
-        plt.imshow(frame, vmax=np.quantile(frame, 0.99))
-        plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
-        plt.savefig(f"{plot_dir}/frame_{i:0>5}.png")
+    # print("Overlaying peaks...")
+    # plot_dir = Path(f"{config['working_dir']}/peaks/overlays")
+    # if plot_dir.exists():
+    #     for p in plot_dir.iterdir():
+    #         p.unlink()
+    # else:
+    #     plot_dir.mkdir()
+    # plt.figure(tight_layout=True, figsize=(10, 5), dpi=150)
+    # for i, frame in enumerate(pbar(img_stack)):
+    #     plt.cla()
+    #     c = np.array(peak_dict[f'frame_{i:05}']['coords']).T
+    #     if not len(c):
+    #         continue
+    #     plt.imshow(frame, vmax=np.quantile(frame, 0.9))
+    #     plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
+    #     plt.savefig(f"{plot_dir}/frame_{i:0>5}.png")
 
     return peak_dict
 
