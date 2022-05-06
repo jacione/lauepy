@@ -110,7 +110,7 @@ def init_entries(root):
     return frame, [year, exp_id, scan_num]
 
 
-def init():
+def new_analysis():
     root = tk.Tk()
     root.title("LAUEPY")
 
@@ -154,20 +154,20 @@ def main(conf_path=None):
 
     with open(conf_path, 'r') as f:
         conf_orig = yaml.safe_load(f)
-    buttons = []
 
     root = tk.Tk()
     root.title("LAUEPY")
 
+    buttons = []
     config = {key: tk.StringVar(root, value=f"{val}") for key, val in conf_orig.items()}
     for val in config.values():
-        val.trace_add("write", lambda a, b, c: [btn.state(['disabled']) for btn in buttons[1:]])
+        val.trace_add("write", lambda a, b, c: [btn.state(['disabled']) for btn in buttons[-5:]])
 
     input_nb = ttk.Notebook(root)
     input_nb.grid(column=0, row=0)
     tab_names = ["General", "Image prep", "Peak finding", "Laue indexing"]
-    tabs = {}
 
+    # Create the tabs on the main window
     for j, name in enumerate(tab_names):
         frame = ttk.Frame(input_nb)
         frame['padding'] = 10
@@ -197,7 +197,6 @@ def main(conf_path=None):
             line = entry_section(frame, "Sample", LAUE_SAM, config, line)
             entry_section(frame, "Other", LAUE_OTH, config, line)
 
-        tabs[name] = frame
         input_nb.add(frame, text=name)
 
     button_frame = ttk.Frame(root)
@@ -206,7 +205,7 @@ def main(conf_path=None):
 
     def save_config():
         ut.save_config({key: val.get() for key, val in config.items()}, conf_path)
-        for btn in buttons[1:]:
+        for btn in buttons[-5:]:
             btn.state(['!disabled'])
 
     def run_prep():
