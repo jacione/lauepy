@@ -149,7 +149,7 @@ def main(conf_path=None):
     for i, (key, val) in enumerate(config.items()):
         ttk.Label(input_frame, text=f"{key}").grid(column=0, row=i, sticky=tk.W)
         entry_box = ttk.Entry(input_frame, textvariable=val)
-        entry_box.grid(column=1, row=i, sticky=tk.W)
+        entry_box.grid(column=1, row=i)
         val.trace_add("write", lambda a, b, c: [btn.state(['disabled']) for btn in buttons[1:]])
 
     button_frame = ttk.Frame(root)
