@@ -190,10 +190,16 @@ def main(conf_path=None):
             twins.find_twins(cfg)
             twins.cleanup_directory()
 
-    fcns = [save_config, run_prep, run_peaks, run_auto, gen_macro, find_twins]
-    fcn_names = ["Save configuration", "Prepare images", "Find peaks", "Index peaks", "Generate macros", "Find twins"]
+    fcns = {
+        "Save configuration": save_config,
+        "Prepare images": run_prep,
+        "Find peaks": run_peaks,
+        "Index peaks": run_auto,
+        "Generate macros": gen_macro,
+        "Find twins": find_twins
+    }
 
-    for i, (fcn, name) in enumerate(zip(fcns, fcn_names)):
+    for name, fcn in fcns.items():
         button = ttk.Button(button_frame, text=name, command=fcn)
         button.pack(fill='x', pady=20)
         buttons.append(button)
