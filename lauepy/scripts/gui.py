@@ -63,6 +63,15 @@ LAUE_SAM = ["laue_sample_goodness", "laue_sample_mis_err", "laue_sample_toleranc
             "laue_sample_comb_sub", "laue_sample_times"]
 LAUE_OTH = ["grain_tolerance", "grain_threshold", "twin_tolerance"]
 
+BOOL_VARS = ["show_plots", "verbose"]
+STR_VARS = ["scan", "alt_id", "year", "exp_id", "spec_seq", "beamline", "calibration", "substrate", "sample"]
+NUM_VARS = ["prep_quantile", "prep_rb_radius", "prep_zero_fraction", "prep_gamma", "prep_coefficient",
+            "prep_gaussian_sigma", "pkid_substrate_threshold", "pkid_substrate_distance", "pkid_sample_threshold",
+            "pkid_sample_distance", "laue_substrate_goodness", "laue_substrate_mis_err", "laue_substrate_tolerance",
+            "laue_substrate_frequency", "laue_substrate_comb_sub", "laue_substrate_times", "laue_sample_goodness",
+            "laue_sample_mis_err", "laue_sample_tolerance", "laue_sample_frequency", "laue_sample_comb_sub",
+            "laue_sample_times", "grain_tolerance", "grain_threshold", "twin_tolerance"]
+
 
 def init_entries(root):
     frame = ttk.Frame(root)
@@ -144,7 +153,16 @@ def main(conf_path=None):
     input_frame.columnconfigure(0, weight=1)
     input_frame.columnconfigure(1, weight=3)
 
-    config = {key: tk.StringVar(value=f"{val}") for key, val in conf_orig.items()}
+    config = {}
+    for key, val in conf_orig.items():
+        if key in BOOL_VARS:
+            config[key] = tk.BooleanVar(value=val)
+        elif key in STR_VARS:
+            config[key] = tk.StringVar(value=val)
+        elif key in NUM_VARS:
+            config[key] = tk.DoubleVar(value=val)
+        else:
+            raise KeyError(f"Config parameter {key} has no defined type.")
 
     for i, (key, val) in enumerate(config.items()):
         ttk.Label(input_frame, text=f"{key}").grid(column=0, row=i, sticky=tk.W)
