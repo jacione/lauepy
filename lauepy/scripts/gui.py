@@ -12,7 +12,7 @@ import lauepy.laue.make_grain_dict as grain
 import lauepy.laue.find_twins as twins
 
 
-CONFIG_ENTRIES = {
+PARAMS = {
     "scan": "Scan number",
     "alt_id": "Alternate ID",
     "year": "Year",
@@ -28,7 +28,7 @@ CONFIG_ENTRIES = {
     "prep_gamma": "Gamma",
     "prep_rb_radius": "Rolling ball radius",
     "prep_zero_fraction": "Zero point quantile",
-    "prep_coefficient": "Overall brightness adjust",
+    "prep_coefficient": "Brightness adjust",
     "prep_gaussian_sigma": "Gaussian filter sigma",
     "pkid_substrate_threshold": "Threshold",
     "pkid_substrate_distance": "Min. distance",
@@ -46,13 +46,13 @@ CONFIG_ENTRIES = {
     "laue_sample_frequency": "Frequency",
     "laue_sample_comb_sub": "Comb sub",
     "laue_sample_times": "Times",
-    "grain_tolerance": "Tolerance",
-    "grain_threshold": "Threshold",
-    "twin_tolerance": "Tolerance"
+    "grain_tolerance": "Grain tolerance",
+    "grain_threshold": "Grain threshold",
+    "twin_tolerance": "Twin tolerance"
 }
 
-GENERAL = ["scan", "alt_id", "year", "exp_id", "spec_seq", "beamline", "calibration", "substrate", "sample",
-           "show_plots", "verbose"]
+GEN_TEXT = ["scan", "alt_id", "year", "exp_id", "spec_seq", "beamline", "calibration", "substrate", "sample"]
+GEN_BOOL = ["show_plots", "verbose"]
 PREP_SUB = ["prep_quantile", "prep_rb_radius"]
 PREP_SAM = ["prep_zero_fraction", "prep_gamma", "prep_coefficient", "prep_gaussian_sigma"]
 PKID_SUB = ["pkid_substrate_threshold", "pkid_substrate_distance"]
@@ -71,6 +71,18 @@ NUM_VARS = ["prep_quantile", "prep_rb_radius", "prep_zero_fraction", "prep_gamma
             "laue_substrate_frequency", "laue_substrate_comb_sub", "laue_substrate_times", "laue_sample_goodness",
             "laue_sample_mis_err", "laue_sample_tolerance", "laue_sample_frequency", "laue_sample_comb_sub",
             "laue_sample_times", "grain_tolerance", "grain_threshold", "twin_tolerance"]
+
+
+def entry_section(parent, heading, entries, config, line):
+    if heading is not None:
+        ttk.Label(parent, text=heading, font=("Arial", 14)).grid(column=0, row=line, sticky=tk.SW, pady=4)
+        line += 1
+    for key in entries:
+        val = config[key]
+        ttk.Label(parent, text=f"{PARAMS[key]}").grid(column=0, row=line, sticky=tk.W)
+        ttk.Entry(parent, textvariable=val).grid(column=1, row=line, sticky=tk.E, pady=4)
+        line += 1
+    return line
 
 
 def init_entries(root):
@@ -147,22 +159,46 @@ def main(conf_path=None):
     root = tk.Tk()
     root.title("LAUEPY")
 
-    input_frame = ttk.Frame(root)
-    input_frame['padding'] = 10
-    input_frame.grid(column=0, row=0)
-    input_frame.columnconfigure(0, weight=1)
-    input_frame.columnconfigure(1, weight=3)
-
-    config = {key: tk.StringVar(value=f"{val}") for key, val in conf_orig.items()}
-
-    for i, (key, val) in enumerate(config.items()):
-        ttk.Label(input_frame, text=f"{key}").grid(column=0, row=i, sticky=tk.W)
-        if key in BOOL_VARS:
-            entry_box = ttk.Checkbutton(input_frame, variable=val, onvalue="True", offvalue="False")
-        else:
-            entry_box = ttk.Entry(input_frame, textvariable=val)
-        entry_box.grid(column=1, row=i)
+    config = {key: tk.StringVar(root, value=f"{val}") for key, val in conf_orig.items()}
+    for val in config.values():
         val.trace_add("write", lambda a, b, c: [btn.state(['disabled']) for btn in buttons[1:]])
+
+    input_nb = ttk.Notebook(root)
+    input_nb.grid(column=0, row=0)
+    tab_names = ["General", "Image prep", "Peak finding", "Laue indexing"]
+    tabs = {}
+
+    for j, name in enumerate(tab_names):
+        frame = ttk.Frame(input_nb)
+        frame['padding'] = 10
+        frame.grid(column=0, row=0)
+        frame.columnconfigure(0, weight=1)
+        frame.columnconfigure(1, weight=1)
+        line = 0
+
+        if j == 0:  # Create the general tab
+            line = entry_section(frame, None, GEN_TEXT, config, line)
+            for i, key in enumerate(GEN_BOOL):
+                val = config[key]
+                ttk.Checkbutton(
+                    frame, variable=val, onvalue="True", offvalue="False", text=PARAMS[key]
+                ).grid(column=i, row=line, pady=4)
+
+        if j == 1:  # Create the image prep tab
+            line = entry_section(frame, "Substrate", PREP_SUB, config, line)
+            entry_section(frame, "Sample", PREP_SAM, config, line)
+
+        if j == 2:  # Create the peak finding tab
+            line = entry_section(frame, "Substrate", PKID_SUB, config, line)
+            entry_section(frame, "Sample", PKID_SAM, config, line)
+
+        if j == 3:  # Create the Laue indexing tab
+            line = entry_section(frame, "Substrate", LAUE_SUB, config, line)
+            line = entry_section(frame, "Sample", LAUE_SAM, config, line)
+            entry_section(frame, "Other", LAUE_OTH, config, line)
+
+        tabs[name] = frame
+        input_nb.add(frame, text=name)
 
     button_frame = ttk.Frame(root)
     button_frame['padding'] = 10
@@ -213,11 +249,11 @@ def main(conf_path=None):
 
     for name, fcn in fcns.items():
         button = ttk.Button(button_frame, text=name, command=fcn)
-        button.pack(fill='x', pady=20)
+        button.pack(fill='x', pady=5)
         buttons.append(button)
 
     root.mainloop()
 
 
 if __name__ == '__main__':
-    main()
+    main("/home/beams/CXDUSER/34idc-work/2022/lauepy_dev/config_example/config.yml")
