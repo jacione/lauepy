@@ -153,20 +153,14 @@ def main(conf_path=None):
     input_frame.columnconfigure(0, weight=1)
     input_frame.columnconfigure(1, weight=3)
 
-    config = {}
-    for key, val in conf_orig.items():
-        if key in BOOL_VARS:
-            config[key] = tk.BooleanVar(value=val)
-        elif key in STR_VARS:
-            config[key] = tk.StringVar(value=val)
-        elif key in NUM_VARS:
-            config[key] = tk.DoubleVar(value=val)
-        else:
-            raise KeyError(f"Config parameter {key} has no defined type.")
+    config = {key: tk.StringVar(value=f"{val}") for key, val in conf_orig.items()}
 
     for i, (key, val) in enumerate(config.items()):
         ttk.Label(input_frame, text=f"{key}").grid(column=0, row=i, sticky=tk.W)
-        entry_box = ttk.Entry(input_frame, textvariable=val)
+        if key in BOOL_VARS:
+            entry_box = ttk.Checkbutton(input_frame, variable=val, onvalue="True", offvalue="False")
+        else:
+            entry_box = ttk.Entry(input_frame, textvariable=val)
         entry_box.grid(column=1, row=i)
         val.trace_add("write", lambda a, b, c: [btn.state(['disabled']) for btn in buttons[1:]])
 
