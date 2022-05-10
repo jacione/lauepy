@@ -1,8 +1,8 @@
 ### Title and directories
-scan: 939
+scan: 97
 alt_id: None
-year: 2021
-exp_id: LauePUP1221
+year: 2022
+exp_id: LauePUP422
 # spec_seq is a unique identifier if there are multiple spec files for the same experiment
 spec_seq: b
 beamline: 34idc

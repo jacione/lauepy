@@ -95,27 +95,29 @@ def init_entries(root):
     year = tk.StringVar()
     ttk.Label(frame, text="Year:").grid(column=0, row=0, sticky=tk.W)
     year_entry = ttk.Entry(frame, textvariable=year)
-    year_entry.grid(column=1, row=0, sticky=tk.W)
+    year_entry.grid(column=1, row=0, sticky=tk.E)
 
     exp_id = tk.StringVar()
     ttk.Label(frame, text="Exp. directory:").grid(column=0, row=1, sticky=tk.W)
     exp_id_entry = ttk.Entry(frame, textvariable=exp_id)
-    exp_id_entry.grid(column=1, row=1, sticky=tk.W)
+    exp_id_entry.grid(column=1, row=1, sticky=tk.E)
 
     scan_num = tk.StringVar()
     ttk.Label(frame, text="Scan number:").grid(column=0, row=2, sticky=tk.W)
     exp_id_entry = ttk.Entry(frame, textvariable=scan_num)
-    exp_id_entry.grid(column=1, row=2, sticky=tk.W)
+    exp_id_entry.grid(column=1, row=2, sticky=tk.E)
 
-    return frame, [year, exp_id, scan_num]
+    alt_id = tk.StringVar()
+    ttk.Label(frame, text="Scan number:").grid(column=0, row=3, sticky=tk.W)
+    exp_id_entry = ttk.Entry(frame, textvariable=alt_id)
+    exp_id_entry.grid(column=1, row=3, sticky=tk.E)
+
+    return frame, [year, exp_id, scan_num, alt_id]
 
 
-def init():
-    root = tk.Tk()
-    root.title("LAUEPY")
-
-    root.rowconfigure(0)
-    root.rowconfigure(1)
+def new_analysis(root):
+    root = tk.Toplevel(root)
+    root.title("New Analysis")
 
     entry_frame, entries = init_entries(root)
     entry_frame.grid(row=0, column=0)
@@ -132,7 +134,7 @@ def init():
         root.quit()
 
     def new_config():
-        ret_val = ut.new_analyis([x.get() for x in entries])
+        ret_val = ut.new_analysis_cli([x.get() for x in entries])
         root.quit()
 
     new_button = ttk.Button(button_frame, text="New", command=new_config)
@@ -154,20 +156,20 @@ def main(conf_path=None):
 
     with open(conf_path, 'r') as f:
         conf_orig = yaml.safe_load(f)
-    buttons = []
 
     root = tk.Tk()
     root.title("LAUEPY")
 
+    buttons = []
     config = {key: tk.StringVar(root, value=f"{val}") for key, val in conf_orig.items()}
     for val in config.values():
-        val.trace_add("write", lambda a, b, c: [btn.state(['disabled']) for btn in buttons[1:]])
+        val.trace_add("write", lambda a, b, c: [btn.state(['disabled']) for btn in buttons[-5:]])
 
     input_nb = ttk.Notebook(root)
     input_nb.grid(column=0, row=0)
     tab_names = ["General", "Image prep", "Peak finding", "Laue indexing"]
-    tabs = {}
 
+    # Create the tabs on the main window
     for j, name in enumerate(tab_names):
         frame = ttk.Frame(input_nb)
         frame['padding'] = 10
@@ -197,16 +199,20 @@ def main(conf_path=None):
             line = entry_section(frame, "Sample", LAUE_SAM, config, line)
             entry_section(frame, "Other", LAUE_OTH, config, line)
 
-        tabs[name] = frame
         input_nb.add(frame, text=name)
 
     button_frame = ttk.Frame(root)
     button_frame['padding'] = 10
     button_frame.grid(column=1, row=0)
 
+    def new_config():
+        dialog = tk.Toplevel(root)
+        dialog.title("New Analysis")
+        pass
+
     def save_config():
         ut.save_config({key: val.get() for key, val in config.items()}, conf_path)
-        for btn in buttons[1:]:
+        for btn in buttons[-5:]:
             btn.state(['!disabled'])
 
     def run_prep():
@@ -256,4 +262,4 @@ def main(conf_path=None):
 
 
 if __name__ == '__main__':
-    main("/home/beams/CXDUSER/34idc-work/2022/lauepy_dev/config_example/config.yml")
+    main()

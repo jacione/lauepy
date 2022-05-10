@@ -37,17 +37,17 @@ def extract_substrate(config):
     img = exposure.adjust_gamma(img, config['prep_gamma'], np.mean(img))
 
     # Rolling ball filter removes large-scale features (such as vignette)
-    # radius = config['prep_rb_radius']
-    # if Path(f"{config['working_dir']}/substrate/background.tiff").exists():
-    #     rb_img = tifffile.imread(f"{config['working_dir']}/substrate/rb_background.tiff")
-    # else:
-    #     if radius is None:
-    #         radius = rb_radius(img)
-    #     print(radius)
-    #     rb_img = restoration.rolling_ball(img, radius=radius)
-    #     tifffile.imsave(f"{config['working_dir']}/substrate/rb_background.tiff", rb_img)
-    # img = img - rb_img
-    img = img - ndi.gaussian_filter(img, config['prep_gaussian_sigma'])
+    radius = config['prep_rb_radius']
+    if Path(f"{config['working_dir']}/substrate/background.tiff").exists():
+        rb_img = tifffile.imread(f"{config['working_dir']}/substrate/rb_background.tiff")
+    else:
+        if radius is None:
+            radius = rb_radius(img)
+        print(radius)
+        rb_img = restoration.rolling_ball(img, radius=radius)
+        tifffile.imsave(f"{config['working_dir']}/substrate/rb_background.tiff", rb_img)
+    img = img - rb_img
+    # img = img - ndi.gaussian_filter(img, config['prep_gaussian_sigma'])
 
     img[img < 0] = 0
     

@@ -16,7 +16,7 @@ with open(example, 'r') as F:
 SPEC_KEYS = ['Piezo_X', 'Piezo_Y', 'Piezo_Z', 'Lab_X', 'Lab_Y', 'Lab_Z']
 
 
-def new_analyis(entries=None):
+def new_analysis_cli(entries=None):
     print('New analysis...')
     if entries is None:
         year = input('Year: ')
@@ -47,6 +47,24 @@ def new_analyis(entries=None):
     cfg.write_text(txt)
     print(f'Analysis folder created:\n\t{work_dir}')
     return str(cfg)
+
+
+def new_analysis(year, exp_id, scan, alt_id, config):
+    exp_dir = Path(f"/home/beams7/CXDUSER/34idc-work/{year}/{exp_id}")
+    work_dir = Path(f'{exp_dir}/Analysis/lauepy_output/scan_{scan:0>4}{alt_id}')
+
+    # Assertions to make sure the analysis directory is valid
+    assert exp_dir.exists()
+    assert not work_dir.exists()
+
+    work_dir.mkdir(parents=True)
+    cfg = work_dir / 'config.yml'
+    cfg.touch()
+
+    for key, val in zip(["year", "exp_id", "scan", "alt_id"], [year, exp_id, scan, alt_id]):
+        config[key] = val
+    save_config(config, cfg)
+    return cfg
 
 
 def file_prompt():
