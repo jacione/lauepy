@@ -90,11 +90,13 @@ def make_grain_dict(config):
 
 def view_grains(grains):
     print('################### GRAIN DICT #######################')
-    print(f'{"Grain":>12}{"RMS":>10}{"Peaks":>10}{"Dist":>10}{"Pstdev":>10}{"Frames":>10}{"HKL":>10}')
+    print(f'{"Grain":>12}{"RMS":>10}{"Peaks":>10}{"Dist":>10}{"Pstdev":>10}{"Frames":>8}{"HKL-out":>10}')
     for grain in grains:
         g = grains[grain]
         pos_std = np.mean(np.std(g['Positions'], axis=0))
         num_frames = len(g['Frames'])
+        if num_frames <= 1 or g['Avg_Peaks'] <= 3.1:
+            continue
         hkl = g['Spec_Orientation'][1]
         print(f"{grain:>12}"
               f"{g['Avg_RMS']:>10}"
@@ -102,5 +104,5 @@ def view_grains(grains):
               f"{round(g['Avg_Dist'], 1):>10}"
               f"{np.around(pos_std, 2):>10}"
               f"{num_frames:>8}"
-              f"         [{round(hkl[0], 2):>6}{round(hkl[1], 2):>8}{round(hkl[2], 2):>8} ]"
+              f"         [{int(round(hkl[0], 0)):>3}, {int(round(hkl[1], 0)):>3}, {int(round(hkl[2], 0)):>3}]"
               )
