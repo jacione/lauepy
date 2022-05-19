@@ -173,7 +173,7 @@ class AutoLaue:
         s = f"$filetype	PeaksFile\n" \
             f"$structureDesc {self.material}\n" \
             f"$latticeParameters {self.lattice_params}\n" \
-            f"$latticeAlphaT 4.065E-10\n" \
+            f"$latticeAlphaT {self.lattice_params[0]*10}E-10\n" \
             f"$lengthUnit nm\n" \
             f"$SpaceGroup {self.space_group}\n" \
             f"$N_Ghat+Intens {len(gvectors)}\n"
