@@ -84,25 +84,27 @@ def make_grain_dict(config):
     with open(f'{working_dir}/peaks/patterns.json', 'w') as json_file:
         json.dump(pattern_dict, json_file)
     if config['verbose']:
-        view_grains(grains)
+        print_grains(grains)
     return
 
 
-def view_grains(grains):
+def print_grains(grains):
     print('################### GRAIN DICT #######################')
-    print(f'{"Grain":>12}{"RMS":>10}{"Peaks":>10}{"Dist":>10}{"Pstdev":>10}{"Frames":>8}{"HKL-out":>10}')
+    print(f'{"Grain":>10}{"RMS":>8}{"Peaks":>7}{"Dist":>9}{"Pstdev":>8}{"Frames":>8}   {"HKL-in":<16}HKL-out')
     for grain in grains:
         g = grains[grain]
         pos_std = np.mean(np.std(g['Positions'], axis=0))
         num_frames = len(g['Frames'])
         if num_frames <= 1 or g['Avg_Peaks'] <= 3.1:
             continue
-        hkl = g['Spec_Orientation'][1]
-        print(f"{grain:>12}"
-              f"{g['Avg_RMS']:>10}"
-              f"{g['Avg_Peaks']:>10}"
-              f"{round(g['Avg_Dist'], 1):>10}"
-              f"{np.around(pos_std, 2):>10}"
-              f"{num_frames:>8}"
-              f"         [{int(round(hkl[0], 0)):>3}, {int(round(hkl[1], 0)):>3}, {int(round(hkl[2], 0)):>3}]"
+        hkl_in = [round(x) for x in g['Spec_Orientation'][0]]
+        hkl_out = [round(x) for x in g['Spec_Orientation'][1]]
+        print(f"{grain:>10}"
+              f"{g['Avg_RMS']:>8}"
+              f"{g['Avg_Peaks']:>7}"
+              f"{round(g['Avg_Dist'], 1):>9}"
+              f"{np.around(pos_std, 2):>8}"
+              f"{num_frames:>8}   "
+              f"[{hkl_in[0]:>3}, {hkl_in[1]:>3}, {hkl_in[2]:>3}] "
+              f"[{hkl_out[0]:>3}, {hkl_out[1]:>3}, {hkl_out[2]:>3}]"
               )
