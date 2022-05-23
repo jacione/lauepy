@@ -123,12 +123,13 @@ class AutoLaue:
         return stack, beam_rast, grain_list, locations
 
     def calc_gs(self):
+        # TODO This function would be a lot more transparent if it were vectorized.
         theta = np.sqrt(self.det_rotation[0]**2 + self.det_rotation[1]**2 + self.det_rotation[2]**2)
+        # TODO theta = np.linalg.norm(self.det_rotation)
         c = np.cos(theta)
         s = np.sin(theta)
         c1 = 1 - c
         Rx, Ry, Rz = self.det_rotation / theta
-        # TODO could this possibly be vectorized?
         rho00 = c + Rx * Rx * c1
         rho01 = Rx * Ry * c1 - Rz * s
         rho02 = Ry * s + Rx * Rz * c1
@@ -156,11 +157,13 @@ class AutoLaue:
                 Z = rho20 * x + rho21 * y + rho22 * z
                 # normalize
                 total = np.sqrt(X ** 2 + Y ** 2 + Z ** 2)
+                # TODO total = np.linalg.norm([X,Y,Z])
                 x_lab, y_lab, z_lab = X / total, Y / total, Z / total
 
                 # normalize qhat
                 q_x, q_y, q_z = x_lab, y_lab, z_lab - 1
                 total_qhat = np.sqrt(q_x ** 2 + q_y ** 2 + q_z ** 2)
+                # TODO total_qhat = np.linalg.norm([q_x, q_y, q_z])
                 q_x = q_x / total_qhat
                 q_y = q_y / total_qhat
                 q_z = q_z / total_qhat
@@ -360,11 +363,6 @@ class AutoLaue:
         # print(peak_list_r)
         peak_list_f = [xy for xy in zip(xtalsimu.xs, xtalsimu.ys)]
 
-        # plt.figure()
-        # plt.scatter(peak_list_r[:, 0], peak_list_r[:, 1], c='k', label='Experimental')
-        # plt.scatter(xtalsimu.xs, xtalsimu.ys, edgecolor='red', facecolor='None', s=160, label='Simulated')
-        # plt.show()
-        # print(peak_list_f)
         d = cdist(peak_list_f, peak_list_r, metric='euclidean')
         indx_min = np.argmin(d, axis=1)
         distance_sum = 0
