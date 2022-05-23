@@ -14,6 +14,14 @@ with open(example, 'r') as F:
     REQUIRED = yaml.safe_load(F)
 
 SPEC_KEYS = ['Piezo_X', 'Piezo_Y', 'Piezo_Z', 'Lab_X', 'Lab_Y', 'Lab_Z']
+SPEC_DICT = {
+    "px": 'Piezo_X',
+    "py": 'Piezo_Y',
+    "pz": 'Piezo_Z',
+    "labx": 'Lab_X',
+    "laby": 'Lab_Y',
+    "labz":  'Lab_Z'
+}
 
 
 def new_analysis_cli(entries=None):
@@ -100,7 +108,7 @@ def read_config(yml_file):
     exp_id = cfg['exp_id']
     scan = cfg['scan']
     alt_id = cfg['alt_id']
-    if alt_id is None:
+    if alt_id is None or alt_id == 'None':
         alt_id = ''
     spec_seq = cfg['spec_seq']
     cfg['working_dir'] = f"/home/beams7/CXDUSER/34idc-work/{year}/{exp_id}/Analysis/lauepy_output" \
@@ -117,24 +125,16 @@ def read_config(yml_file):
         raise FileNotFoundError('Could not find the specified SPEC FILE. Check config')
 
     # Load up the calibration data
-    if cfg['calibration'] is None:
-        cal = prompt_calibration()
-        if 'n' not in input("Save this calibration for other datasets? (Y/n) ").lower():
-            count = 0
-            while True:
-                cal_path = Path(cfg['working_dir']).parent / f"calibration_{count:0>3}.json"
-                if cal_path.exists():
-                    count += 1
-                else:
-                    with open(f"{cal_path}", 'w') as f:
-                        json.dump(cal, f)
-                    txt = Path(yml_file).read_text()
-                    txt = re.compile('calibration:.*').sub(f'calibration: {count}', txt)
-                    Path(yml_file).write_text(txt)
-                    break
-    else:
-        with open(f'{Path(cfg["working_dir"]).parent}/calibration_{cfg["calibration"]:0>3}.json') as f:
-            cal = json.load(f)
+    cal_path = f'{Path(cfg["working_dir"]).parents[1]}/DetectorCalibration/{cfg["calibration"]}'
+    if not cal_path.endswith(".json"):
+        cal_path += ".json"
+    with open(cal_path) as f:
+        cal = json.load(f)
+    cfg['det_rotation'] = cal['rot_vec']
+    cfg['det_translation'] = cal['trans_vec']
+    cfg['det_pixels'] = cal['pixels'][0:2]
+    cfg['det_pitch'] = cal['pixels'][2:4]
+    cfg['det_name'] = cal['det_name']
     for key, val in cal.items():
         cfg[key] = val
 
@@ -169,16 +169,17 @@ def read_spec_log(config):
     # The (scan - 1) indexing is needed because the spec file starts at scan 1 (not zero)
     scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
     scan.ReadData()
-    arr = np.empty((scan.data.shape[0], len(SPEC_KEYS)))
+    axes = [v for k, v in SPEC_DICT.items() if k in scan.command]
+    arr = np.empty((scan.data.shape[0], len(axes)))
 
-    for i, key in enumerate(SPEC_KEYS):
+    for i, ax in enumerate(axes):
         try:
             # Try to find the key in the column headers of the spec table.
-            arr[:, i] = np.array(scan.data[key])
+            arr[:, i] = np.array(scan.data[ax])
         except ValueError:
             # If the key isn't in the header, then it was held constant. In that case, just use the initial value.
-            arr[:, i] = scan.init_motor_pos[f'INIT_MOPO_{key}']
-    return arr
+            arr[:, i] = scan.init_motor_pos[f'INIT_MOPO_{ax}']
+    return axes, arr
 
 
 def read_spec_init(config, *keys):
@@ -212,19 +213,6 @@ def purge(config):
             if not d.exists():
                 d.mkdir(parents=True)
     return
-
-
-def prompt_calibration():
-    with open(file_prompt(), 'r') as f:
-        data = json.load(f)
-    cal = {
-        'det_rotation': data['rot_vec'],
-        'det_translation': data['trans_vec'],
-        'det_pixels': data['pixels'][0:2],
-        'det_pitch': data['pixels'][2:4],
-        'det_name': data['det_name']
-    }
-    return cal
 
 
 if __name__ == '__main__':

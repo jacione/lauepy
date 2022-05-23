@@ -81,7 +81,7 @@ def find_substrate_peaks(config, peak_dict):
 
     if config['show_plots']:
         plt.figure()
-        plt.imshow(img)
+        plt.imshow(img, vmax=np.quantile(img, 0.95))
         plt.scatter(peak_coords[:, 0], peak_coords[:, 1], edgecolor='red', facecolor='None', s=160)
         plt.figure()
         plt.imshow(sub_mask)
@@ -118,8 +118,7 @@ def find_sample_peaks(config, peak_dict):
     # Apply the substrate mask onto the image stack
     img_stack = np.ma.array(img_stack, mask=substrate_mask)
 
-    # This loop does two things: (1) save the peaks into a dictionary where they are organized by frame, and (2) find
-    # the frame with the highest number of peaks, so that it can be plt.imshown later on.
+    # This loop saves the peaks into a dictionary where they are organized by frame
     for frame, img in enumerate(img_stack):
         peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
         peak_dict[f'frame_{frame:05}'] = {
@@ -143,36 +142,38 @@ def find_sample_peaks(config, peak_dict):
         print(f'Avg peaks per frame: {mean_peaks}')
         print(f'Time to calculate: {end-start: 0.3} sec')
 
-    # print("Overlaying peaks...")
-    # plot_dir = Path(f"{config['working_dir']}/peaks/overlays")
-    # if plot_dir.exists():
-    #     for p in plot_dir.iterdir():
-    #         p.unlink()
-    # else:
-    #     plot_dir.mkdir()
-    # plt.figure(tight_layout=True, figsize=(10, 5), dpi=150)
-    # for i, frame in enumerate(pbar(img_stack)):
-    #     plt.cla()
-    #     c = np.array(peak_dict[f'frame_{i:05}']['coords']).T
-    #     if not len(c):
-    #         continue
-    #     plt.imshow(frame, vmax=np.quantile(frame, 0.9))
-    #     plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
-    #     plt.savefig(f"{plot_dir}/frame_{i:0>5}.png")
+    if config['show_plots']:
+        print("Overlaying peaks...")
+        plot_dir = Path(f"{config['working_dir']}/peaks/overlays")
+        if plot_dir.exists():
+            for p in plot_dir.iterdir():
+                p.unlink()
+        else:
+            plot_dir.mkdir()
+        plt.figure(tight_layout=True, figsize=(10, 5), dpi=150)
+        for i, frame in enumerate(pbar(img_stack)):
+            plt.cla()
+            c = np.array(peak_dict[f'frame_{i:05}']['coords']).T
+            if not len(c):
+                continue
+            plt.imshow(frame, vmax=config['prep_coefficient']*0.25)
+            plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
+            plt.savefig(f"{plot_dir}/frame_{i:0>5}.png")
 
     return peak_dict
 
 
 def record_positions(config, peak_dict):
-    spec_positions = ut.read_spec_log(config)
+    axes, spec_positions = ut.read_spec_log(config)
+    peak_dict['info'] = {'angles': ut.read_spec_init(config, 'Phi', 'Chi', 'Theta').tolist()}
+    peak_dict['info']['axes'] = axes  # TODO make sure that the axes labels get propagated to the grain dict.
 
     for frame, frame_data in peak_dict.items():
         if frame.startswith('frame_'):
             frame_data['positions'] = list(spec_positions[int(frame[-3:])])
         elif frame == 'substrate':
-            frame_data['positions'] = [0, 0, 0, 0, 0, 0]
+            frame_data['positions'] = [0 for _ in axes]
 
-    peak_dict['info'] = {'angles': ut.read_spec_init(config, 'Phi', 'Chi', 'Theta').tolist()}
     return peak_dict
 
 

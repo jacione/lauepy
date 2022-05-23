@@ -262,4 +262,4 @@ def main(conf_path=None):
 
 
 if __name__ == '__main__':
-    main()
+    main("/home/beams7/CXDUSER/34idc-work/2022/LauePUP422/Analysis/lauepy_output/scan_0939/config.yml")
