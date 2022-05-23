@@ -81,7 +81,7 @@ def find_substrate_peaks(config, peak_dict):
 
     if config['show_plots']:
         plt.figure()
-        plt.imshow(img)
+        plt.imshow(img, vmax=np.quantile(img, 0.95))
         plt.scatter(peak_coords[:, 0], peak_coords[:, 1], edgecolor='red', facecolor='None', s=160)
         plt.figure()
         plt.imshow(sub_mask)
@@ -157,7 +157,7 @@ def find_sample_peaks(config, peak_dict):
             c = np.array(peak_dict[f'frame_{i:05}']['coords']).T
             if not len(c):
                 continue
-            plt.imshow(frame, vmax=np.quantile(frame, 0.9))
+            plt.imshow(frame, vmax=config['prep_coefficient']*0.25)
             plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
             plt.savefig(f"{plot_dir}/frame_{i:0>5}.png")
 
