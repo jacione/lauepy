@@ -100,7 +100,7 @@ def read_config(yml_file):
     exp_id = cfg['exp_id']
     scan = cfg['scan']
     alt_id = cfg['alt_id']
-    if alt_id is None:
+    if alt_id is None or alt_id == 'None':
         alt_id = ''
     spec_seq = cfg['spec_seq']
     cfg['working_dir'] = f"/home/beams7/CXDUSER/34idc-work/{year}/{exp_id}/Analysis/lauepy_output" \
