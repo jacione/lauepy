@@ -165,15 +165,16 @@ def find_sample_peaks(config, peak_dict):
 
 
 def record_positions(config, peak_dict):
-    spec_positions = ut.read_spec_log(config)
+    axes, spec_positions = ut.read_spec_log(config)
+    peak_dict['info'] = {'angles': ut.read_spec_init(config, 'Phi', 'Chi', 'Theta').tolist()}
+    peak_dict['info']['axes'] = axes  # TODO make sure that the axes labels get propagated to the grain dict.
 
     for frame, frame_data in peak_dict.items():
         if frame.startswith('frame_'):
             frame_data['positions'] = list(spec_positions[int(frame[-3:])])
         elif frame == 'substrate':
-            frame_data['positions'] = [0, 0, 0, 0, 0, 0]
+            frame_data['positions'] = [0 for _ in axes]
 
-    peak_dict['info'] = {'angles': ut.read_spec_init(config, 'Phi', 'Chi', 'Theta').tolist()}
     return peak_dict
 
 

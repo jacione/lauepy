@@ -14,6 +14,14 @@ with open(example, 'r') as F:
     REQUIRED = yaml.safe_load(F)
 
 SPEC_KEYS = ['Piezo_X', 'Piezo_Y', 'Piezo_Z', 'Lab_X', 'Lab_Y', 'Lab_Z']
+SPEC_DICT = {
+    "px": 'Piezo_X',
+    "py": 'Piezo_Y',
+    "pz": 'Piezo_Z',
+    "labx": 'Lab_X',
+    "laby": 'Lab_Y',
+    "labz":  'Lab_Z'
+}
 
 
 def new_analysis_cli(entries=None):
@@ -161,16 +169,17 @@ def read_spec_log(config):
     # The (scan - 1) indexing is needed because the spec file starts at scan 1 (not zero)
     scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
     scan.ReadData()
-    arr = np.empty((scan.data.shape[0], len(SPEC_KEYS)))
+    axes = [v for k, v in SPEC_DICT.items() if k in scan.command]
+    arr = np.empty((scan.data.shape[0], len(axes)))
 
-    for i, key in enumerate(SPEC_KEYS):
+    for i, ax in enumerate(axes):
         try:
             # Try to find the key in the column headers of the spec table.
-            arr[:, i] = np.array(scan.data[key])
+            arr[:, i] = np.array(scan.data[ax])
         except ValueError:
             # If the key isn't in the header, then it was held constant. In that case, just use the initial value.
-            arr[:, i] = scan.init_motor_pos[f'INIT_MOPO_{key}']
-    return arr
+            arr[:, i] = scan.init_motor_pos[f'INIT_MOPO_{ax}']
+    return axes, arr
 
 
 def read_spec_init(config, *keys):
