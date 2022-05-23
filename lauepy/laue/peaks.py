@@ -118,8 +118,7 @@ def find_sample_peaks(config, peak_dict):
     # Apply the substrate mask onto the image stack
     img_stack = np.ma.array(img_stack, mask=substrate_mask)
 
-    # This loop does two things: (1) save the peaks into a dictionary where they are organized by frame, and (2) find
-    # the frame with the highest number of peaks, so that it can be plt.imshown later on.
+    # This loop saves the peaks into a dictionary where they are organized by frame
     for frame, img in enumerate(img_stack):
         peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
         peak_dict[f'frame_{frame:05}'] = {
