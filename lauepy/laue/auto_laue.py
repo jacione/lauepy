@@ -43,7 +43,7 @@ class AutoLaue:
         self.working_dir = config['working_dir']
         self.peak_dict = pk.load_peaks(config)
         self.phichitheta = self.peak_dict['info']['angles']
-        self.phichitheta[1] = 100.0
+        self.phichitheta[1] -= 10
 
         self.times = None
         self.comb_sub = None
