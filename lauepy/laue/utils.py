@@ -117,24 +117,16 @@ def read_config(yml_file):
         raise FileNotFoundError('Could not find the specified SPEC FILE. Check config')
 
     # Load up the calibration data
-    if cfg['calibration'] is None:
-        cal = prompt_calibration()
-        if 'n' not in input("Save this calibration for other datasets? (Y/n) ").lower():
-            count = 0
-            while True:
-                cal_path = Path(cfg['working_dir']).parent / f"calibration_{count:0>3}.json"
-                if cal_path.exists():
-                    count += 1
-                else:
-                    with open(f"{cal_path}", 'w') as f:
-                        json.dump(cal, f)
-                    txt = Path(yml_file).read_text()
-                    txt = re.compile('calibration:.*').sub(f'calibration: {count}', txt)
-                    Path(yml_file).write_text(txt)
-                    break
-    else:
-        with open(f'{Path(cfg["working_dir"]).parent}/calibration_{cfg["calibration"]:0>3}.json') as f:
-            cal = json.load(f)
+    cal_path = f'{Path(cfg["working_dir"]).parents[1]}/DetectorCalibration/{cfg["calibration"]}'
+    if not cal_path.endswith(".json"):
+        cal_path += ".json"
+    with open(cal_path) as f:
+        cal = json.load(f)
+    cfg['det_rotation'] = cal['rot_vec']
+    cfg['det_translation'] = cal['trans_vec']
+    cfg['det_pixels'] = cal['pixels'][0:2]
+    cfg['det_pitch'] = cal['pixels'][2:4]
+    cfg['det_name'] = cal['det_name']
     for key, val in cal.items():
         cfg[key] = val
 
@@ -212,19 +204,6 @@ def purge(config):
             if not d.exists():
                 d.mkdir(parents=True)
     return
-
-
-def prompt_calibration():
-    with open(file_prompt(), 'r') as f:
-        data = json.load(f)
-    cal = {
-        'det_rotation': data['rot_vec'],
-        'det_translation': data['trans_vec'],
-        'det_pixels': data['pixels'][0:2],
-        'det_pitch': data['pixels'][2:4],
-        'det_name': data['det_name']
-    }
-    return cal
 
 
 if __name__ == '__main__':
