@@ -29,4 +29,4 @@ You can then adjust the parameters to your needs and execute the commands from t
 
 If you run into a bug, or if you have an idea for improvement, please-oh-please create an issue on the [issue tracker](https://github.com/jacione/lauepy/issues). If it's not there, it probably won't get done.
 
-If you want to contribute to the code itself, you are welcome to do so by forking the repository. If you have something specific in mind, you should leave a comment on the relevant issue (creating one if necessary).
+As for contributions to the code itself, we would prefer to keep the development within our research team for now. There is enough high-speed, low-level development happening that it would be difficult to manage contributions from those unfamiliar with the underlying algorithms as well as how the project fits into our overall research goals. Once the code is a bit more stable and robust, we will happily change this policy.
