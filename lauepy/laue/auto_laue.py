@@ -15,6 +15,7 @@ from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
 from matplotlib import pyplot as plt
+from progressbar import progressbar as pbar
 
 import lauepy.laue.forward_sim as fsim
 import lauepy.laue.peaks as pk
@@ -43,7 +44,6 @@ class AutoLaue:
         self.working_dir = config['working_dir']
         self.peak_dict = pk.load_peaks(config)
         self.phichitheta = self.peak_dict['info']['angles']
-        self.phichitheta[1] -= 10
 
         self.times = None
         self.comb_sub = None
@@ -188,14 +188,19 @@ class AutoLaue:
 
     def run_euler(self):
         # TODO: put the euler program for linux/mac/windows in the same directory and select based on current OS
-        sub.call([
+
+        sub.run([
             f'{self.config["lauepy_dir"]}/scripts/eulerlinux',
             '-k', '16',
             '-t', '24',
             '-c', '72',
             '-a', f'{self.tolerance}',
-            '-f', f'{self.working_dir}/peaks/Peaks.txt'
-        ])
+            '-f', f'{self.working_dir}/peaks/Peaks.txt',
+            '-o', f'{self.working_dir}/peaks/Index.txt',
+            ],
+            stdout=sub.DEVNULL,
+            stderr=sub.DEVNULL
+        )
         return
 
     @staticmethod
@@ -250,7 +255,6 @@ class AutoLaue:
             size = self.times
 
         indices = [random.sample(range(num_peaks), r) for _ in range(size)]
-        print(f"{size} random combinations containing {r} peaks")
 
         reduced_list = []
         for count_index, ind in enumerate(indices):
@@ -301,20 +305,19 @@ class AutoLaue:
         return reduced_list
 
     def index(self):
+        print("\nIndexing Laue peaks...")
         self.pattern_ID = 1
         self.pattern_dict = {}
 
         self.calc_gs()
 
-        for frame, frame_data in self.peak_dict.items():
+        for frame, frame_data in pbar(self.peak_dict.items()):
             if frame.startswith('frame_'):
                 i = int(frame[-5:])  # The frame number should be the last 5 characters in the dictionary key
-                print(f'Indexing frame {i}')
                 if frame_data['num_peaks'] < 3:
                     continue
             elif frame == 'substrate':
                 i = -1
-                print('Indexing substrate')
                 self.set_params(substrate=True)
             else:
                 continue
