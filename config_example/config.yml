@@ -16,13 +16,11 @@ show_plots: True
 verbose: False
 
 ### Image prep parameters (all start with "prep_")
-prep_quantile: 0.5
-prep_gamma: 1.0
-# Leave the rb_radius blank to determine automatically
-prep_rb_radius: None
-prep_zero_fraction: 0.9
-prep_coefficient: 1000
-prep_gaussian_sigma: 50
+prep_substrate_quantile: 0.5
+prep_substrate_sigma: 0.75
+prep_substrate_radii: [100, 30, 10]
+prep_sample_sigma: 0.75
+prep_sample_radii: [100, 30, 10]
 
 ### Peak-indexing parameters (all start with "pkid_")
 pkid_substrate_threshold: 0.4
