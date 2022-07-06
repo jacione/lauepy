@@ -51,6 +51,14 @@ def find_substrate_peaks(config, peak_dict):
     threshold = np.std(img) * config['pkid_substrate_threshold']
     min_dist = config['pkid_substrate_distance']
 
+    if config['verbose']:
+        print()
+        print('### Indexed substrate peaks ###')
+        print(f'Min peak distance: {min_dist} pixels')
+        print(f'Rel. peak threshold: {config["pkid_substrate_threshold"]}')
+        print(f'Abs. peak threshold: {threshold:0.3}')
+
+
     # Find the peaks using skimage.feature.peak_local_max
     peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
     peak_coords = np.fliplr(peak_coords)  # This is so that they go more nicely into the following functions
@@ -71,17 +79,12 @@ def find_substrate_peaks(config, peak_dict):
     end = time.perf_counter()
 
     if config['verbose']:
-        print()
-        print('### Indexed substrate peaks ###')
-        print(f'Min peak distance: {min_dist} pixels')
-        print(f'Rel. peak threshold: {config["pkid_substrate_threshold"]}')
-        print(f'Abs. peak threshold: {threshold:0.3}')
         print(f'Number of peaks found: {peak_coords.shape[0]}')
         print(f'Time to calculate: {end-start: 0.3} sec')
 
     if config['show_plots']:
         plt.figure()
-        plt.imshow(img, vmax=np.quantile(img, 0.95))
+        plt.imshow(img, vmax=np.quantile(img, 0.999))
         plt.scatter(peak_coords[:, 0], peak_coords[:, 1], edgecolor='red', facecolor='None', s=160)
         plt.figure()
         plt.imshow(sub_mask)
@@ -101,8 +104,16 @@ def find_sample_peaks(config, peak_dict):
     img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
 
     # Set the peak-finding parameters
-    threshold = np.std(img_stack) * config['pkid_sample_threshold']
+    threshold = np.std(img_stack, axis=(1, 2)) * config['pkid_sample_threshold']
     min_dist = config['pkid_sample_distance']
+
+    if config['verbose']:
+        print()
+        print('### Indexed sample peaks ###')
+        print(f'Min peak distance: {min_dist} pixels')
+        print(f'Threshold rel: {config["pkid_sample_threshold"]}')
+        print(f'Threshold mean: {np.mean(threshold):0.3}')
+        print(f'Threshold stdv: {np.std(threshold):0.3}')
 
     # Load the mask from the substrate
     try:
@@ -119,8 +130,8 @@ def find_sample_peaks(config, peak_dict):
     img_stack = np.ma.array(img_stack, mask=substrate_mask)
 
     # This loop saves the peaks into a dictionary where they are organized by frame
-    for frame, img in enumerate(img_stack):
-        peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
+    for frame, img in enumerate(pbar(img_stack)):
+        peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold[frame], exclude_border=1)
         peak_dict[f'frame_{frame:05}'] = {
             'coords': np.fliplr(peak_coords).tolist(),
             'num_peaks': peak_coords.shape[0]
@@ -133,17 +144,15 @@ def find_sample_peaks(config, peak_dict):
     mean_peaks = np.mean([peak_dict[frame]["num_peaks"] for frame in peak_dict.keys()])
 
     if config['verbose']:
-        print()
-        print('### Indexed sample peaks ###')
-        print(f'Min peak distance: {min_dist} pixels')
-        print(f'Rel. peak threshold: {config["pkid_sample_threshold"]}')
-        print(f'Abs. peak threshold: {threshold:0.3}')
         print(f'Number of peaks found: {total_peaks}')
         print(f'Avg peaks per frame: {mean_peaks}')
         print(f'Time to calculate: {end-start: 0.3} sec')
 
     if config['show_plots']:
+        print()
         print("Overlaying peaks...")
+        print("This is a very slow process. If you're confident in your peakfinding parameters, you may want to"
+              "disable the show_plots parameter.")
         plot_dir = Path(f"{config['working_dir']}/peaks/overlays")
         if plot_dir.exists():
             for p in plot_dir.iterdir():
@@ -156,7 +165,7 @@ def find_sample_peaks(config, peak_dict):
             c = np.array(peak_dict[f'frame_{i:05}']['coords']).T
             if not len(c):
                 continue
-            plt.imshow(frame, vmax=config['prep_coefficient']*0.25)
+            plt.imshow(frame, vmax=np.quantile(frame, 0.999))
             plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
             plt.savefig(f"{plot_dir}/frame_{i:0>5}.png")
 
