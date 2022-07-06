@@ -90,21 +90,20 @@ def make_grain_dict(config):
 
 def print_grains(grains):
     print('################### GRAIN DICT #######################')
-    print(f'{"Grain":>10}{"RMS":>8}{"Peaks":>7}{"Dist":>9}{"Pstdev":>8}{"Frames":>8}   {"HKL-in":<16}HKL-out')
+    print(f'{"Grain":>10}{"RMS":>8}{"Peaks":>7}{"Frames":>8}   {"Position":<16}{"HKL-in":<16}{"HKL-out":<16}')
     for grain in grains:
         g = grains[grain]
-        pos_std = np.mean(np.std(g['Positions'], axis=0))
+        pos = np.mean(g['Positions'], axis=0)
         num_frames = len(g['Frames'])
-        if num_frames <= 1 or g['Avg_Peaks'] <= 3.1:
+        if (num_frames <= 1 and g['Avg_Peaks'] <= 3.01) or num_frames > 100:
             continue
         hkl_in = [round(x) for x in g['Spec_Orientation'][0]]
         hkl_out = [round(x) for x in g['Spec_Orientation'][1]]
         print(f"{grain:>10}"
               f"{g['Avg_RMS']:>8}"
               f"{g['Avg_Peaks']:>7}"
-              f"{round(g['Avg_Dist'], 1):>9}"
-              f"{np.around(pos_std, 2):>8}"
               f"{num_frames:>8}   "
+              f"[{np.around(pos[0], 2):>6},{np.around(pos[1], 2):>6}] "
               f"[{hkl_in[0]:>3}, {hkl_in[1]:>3}, {hkl_in[2]:>3}] "
               f"[{hkl_out[0]:>3}, {hkl_out[1]:>3}, {hkl_out[2]:>3}]"
               )
