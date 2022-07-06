@@ -24,12 +24,12 @@ PARAMS = {
     "sample": "Sample",
     "show_plots": "Show plots",
     "verbose": "Verbose",
-    "prep_quantile": "Quantile filter",
-    "prep_gamma": "Gamma",
-    "prep_rb_radius": "Rolling ball radius",
+    "prep_substrate_quantile": "Quantile filter",
+    "prep_substrate_sigma": "Gaussian filter sigma",
+    "prep_substrate_radii": "Rolling ball radii",
+    "prep_sample_sigma": "Gaussian filter sigma",
+    "prep_sample_radii": "Rolling ball radii",
     "prep_zero_fraction": "Zero point quantile",
-    "prep_coefficient": "Brightness adjust",
-    "prep_gaussian_sigma": "Gaussian filter sigma",
     "pkid_substrate_threshold": "Threshold",
     "pkid_substrate_distance": "Min. distance",
     "pkid_sample_threshold": "Threshold",
@@ -53,8 +53,8 @@ PARAMS = {
 
 GEN_TEXT = ["scan", "alt_id", "year", "exp_id", "spec_seq", "beamline", "calibration", "substrate", "sample"]
 GEN_BOOL = ["show_plots", "verbose"]
-PREP_SUB = ["prep_quantile", "prep_rb_radius"]
-PREP_SAM = ["prep_zero_fraction", "prep_gamma", "prep_coefficient", "prep_gaussian_sigma"]
+PREP_SUB = ["prep_substrate_quantile", "prep_substrate_sigma", "prep_substrate_radii"]
+PREP_SAM = ["prep_sample_sigma", "prep_sample_radii"]
 PKID_SUB = ["pkid_substrate_threshold", "pkid_substrate_distance"]
 PKID_SAM = ["pkid_sample_threshold", "pkid_sample_distance"]
 LAUE_SUB = ["laue_substrate_goodness", "laue_substrate_mis_err", "laue_substrate_tolerance", "laue_substrate_frequency",
@@ -65,8 +65,8 @@ LAUE_OTH = ["grain_tolerance", "grain_threshold", "twin_tolerance"]
 
 BOOL_VARS = ["show_plots", "verbose"]
 STR_VARS = ["scan", "alt_id", "year", "exp_id", "spec_seq", "beamline", "calibration", "substrate", "sample"]
-NUM_VARS = ["prep_quantile", "prep_rb_radius", "prep_zero_fraction", "prep_gamma", "prep_coefficient",
-            "prep_gaussian_sigma", "pkid_substrate_threshold", "pkid_substrate_distance", "pkid_sample_threshold",
+NUM_VARS = ["prep_substrate_quantile", "prep_substrate_sigma", "prep_substrate_radii", "prep_sample_sigma",
+            "prep_sample_radii", "pkid_substrate_threshold", "pkid_substrate_distance", "pkid_sample_threshold",
             "pkid_sample_distance", "laue_substrate_goodness", "laue_substrate_mis_err", "laue_substrate_tolerance",
             "laue_substrate_frequency", "laue_substrate_comb_sub", "laue_substrate_times", "laue_sample_goodness",
             "laue_sample_mis_err", "laue_sample_tolerance", "laue_sample_frequency", "laue_sample_comb_sub",
