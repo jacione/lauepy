@@ -150,6 +150,10 @@ def read_config(yml_file):
 
 def save_config(cfg, yml_file):
     f = Path(yml_file)
+    if not f.exists():
+        f.parent.mkdir(exist_ok=True)
+        f.touch()
+        f.write_text(example.read_text())
     text = f.read_text()
     for key, val in cfg.items():
         text = re.compile(f'{key}:.*').sub(f'{key}: {val}', text)

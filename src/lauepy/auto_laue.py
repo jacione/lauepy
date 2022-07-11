@@ -71,11 +71,11 @@ class AutoLaue:
         if substrate:
             name = 'substrate'
 
-        self.times = self.config[f'laue_{name}_times']
-        self.comb_sub = self.config[f'laue_{name}_comb_sub']
-        self.goodness = self.config[f'laue_{name}_goodness']
+        self.times = 1
+        self.comb_sub = 0
+        self.goodness = 0
         self.tolerance = self.config[f'laue_{name}_tolerance']
-        self.frequency = self.config[f'laue_{name}_frequency']
+        self.frequency = 0
         self.mis_err = self.config[f'laue_{name}_mis_err']
         with open(f'{self.config["lauepy_dir"]}/crystals/{self.config[name]}.json') as f:
             xtal_params = json.load(f)

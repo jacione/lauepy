@@ -12,8 +12,8 @@ beamline: 34idc
 calibration: 0
 substrate: SrTiO3
 sample: Au
-show_plots: True
-verbose: False
+show_plots: 1
+verbose: 0
 
 ### Image prep parameters (all start with "prep_")
 prep_substrate_quantile: 0.5
@@ -29,19 +29,19 @@ pkid_sample_threshold: 0.4
 pkid_sample_distance: 10
 
 ### Laue analysis parameters (all start with "laue_")
-laue_substrate_goodness: 0
+#laue_substrate_goodness: 0
 laue_substrate_mis_err: 0.5
 laue_substrate_tolerance: 0.3
-laue_substrate_frequency: 0
-laue_substrate_comb_sub: 0
-laue_substrate_times: 1
+#laue_substrate_frequency: 0
+#laue_substrate_comb_sub: 0
+#laue_substrate_times: 1
 
-laue_sample_goodness: 0
+#laue_sample_goodness: 0
 laue_sample_mis_err: 0.5
 laue_sample_tolerance: 0.1
-laue_sample_frequency: 0
-laue_sample_comb_sub: 0
-laue_sample_times: 1
+#laue_sample_frequency: 0
+#laue_sample_comb_sub: 0
+#laue_sample_times: 1
 
 grain_tolerance: 1.0
 grain_threshold: 10000
