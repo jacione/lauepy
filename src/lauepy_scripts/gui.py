@@ -210,7 +210,6 @@ class LaueApp:
             alt_id = ""
         self.conf_path = f"/home/beams/CXDUSER/34idc-work/{year}/{exp_id}/Analysis/lauepy_output/scan_{int(scan):04}" \
                          f"{alt_id}/config.yml"
-        print(self.conf_path)
         ut.save_config({key: str(val.get()) for key, val in self.config.items()}, self.conf_path)
         for btn in self.run_buttons:
             btn.state(['!disabled'])
