@@ -1,6 +1,8 @@
 import json
 
 import numpy as np
+import matplotlib.pyplot as plt
+from adjustText import adjust_text
 
 import src.lauepy.overlay_peaks as op
 from src.lauepy.disorientation import calc_disorient, rmat_2_quat
@@ -67,7 +69,7 @@ def make_grain_dict(config):
         grains[grain]['Avg_Peaks'] = float(np.round(np.mean(grains[grain]['Num_Peaks']), 1))
         grains[grain]['Avg_Count'] = float(np.round(np.mean(grains[grain]['Count']), 1))
         pos = np.array(grains[grain]['Positions'])
-        grains[grain]['COM'] = pos[np.argsort(pos[:, 0])][len(pos) // 2].tolist()
+        grains[grain]['COM'] = np.average(pos, axis=0, weights=grains[grain]['Num_Peaks']).tolist()
 
     with open(f'{working_dir}/grains/grains.json', 'w') as json_file:
         json.dump(grains, json_file)
@@ -85,6 +87,8 @@ def make_grain_dict(config):
         json.dump(pattern_dict, json_file)
     if config['verbose']:
         print_grains(grains)
+    if config['show_plots']:
+        map_grains(config)
     return
 
 
@@ -93,7 +97,6 @@ def print_grains(grains):
     print(f'{"Grain":>10}{"RMS":>8}{"Peaks":>7}{"Frames":>8}   {"Position":<16}{"HKL-in":<16}{"HKL-out":<16}')
     for grain in grains:
         g = grains[grain]
-        pos = np.mean(g['Positions'], axis=0)
         num_frames = len(g['Frames'])
         if (num_frames <= 1 and g['Avg_Peaks'] <= 3.01) or num_frames > 100:
             continue
@@ -103,7 +106,33 @@ def print_grains(grains):
               f"{g['Avg_RMS']:>8}"
               f"{g['Avg_Peaks']:>7}"
               f"{num_frames:>8}   "
-              f"[{np.around(pos[0], 2):>6},{np.around(pos[1], 2):>6}] "
+              f"[{np.around(g['COM'][0], 2):>6},{np.around(g['COM'][1], 2):>6}] "
               f"[{hkl_in[0]:>3}, {hkl_in[1]:>3}, {hkl_in[2]:>3}] "
               f"[{hkl_out[0]:>3}, {hkl_out[1]:>3}, {hkl_out[2]:>3}]"
               )
+
+
+def map_grains(config):
+    working_dir = config["working_dir"]
+    with open(f'{working_dir}/peaks/peaks.json', 'r') as f:
+        phi = json.load(f)["info"]["angles"][0]
+    with open(f'{working_dir}/grains/grains.json', 'r') as f:
+        grains = {
+            grain[6:]: g["COM"]
+            for grain, g in json.load(f).items()
+            if (1 < len(g['Frames']) < 100 or g['Avg_Peaks'] > 3.01) and grain != "substrate"
+        }
+
+    phi = np.abs(np.deg2rad(90-phi))
+
+    coords = np.array([c for c in grains.values()])
+    coords[:, 1] *= np.tan(phi)
+
+    plt.figure()
+    plt.gca().set_aspect('equal')
+    plt.scatter(*coords.T, c='b')
+    ts = []
+    for num, c in zip(grains, coords):
+        ts.append(plt.text(*c, num, size=15))
+    adjust_text(ts, x=coords[:, 0], y=coords[:, 1], force_points=0.2)
+    plt.show()
