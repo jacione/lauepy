@@ -23,7 +23,7 @@ That will give you this interface:
 
 ![image](https://user-images.githubusercontent.com/34489968/170314681-c63eef50-e269-441d-990d-db94823dbd72.png)
 
-You can then adjust the parameters to your needs and execute the commands from top to bottom. If you're more comfortable with a command-line interface, there are other files in the `scripts` directory that do all of the same things, and can be run one after another.
+You can then adjust the parameters to your needs and execute the commands from top to bottom. If you're more comfortable with a command-line interface, there are other files in the `scripts` directory that do all the same things, and can be run one after another.
 
 ## How to contribute
 
