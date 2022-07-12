@@ -57,7 +57,7 @@ def find_twins(config):
             file.write('\n%s %s %s %s %s %s' % tuple(e))
 
     angle_calculator = Path(__file__).resolve().parents[0] / 'a.out'
-    sub.run([f'{angle_calculator}', '0', '1', '1', '0', angle_path])
+    sub.run([f'{angle_calculator}', '0', '1', '1', '0', angle_path], stdout=sub.DEVNULL, stderr=sub.DEVNULL)
     data = np.loadtxt('min-misor-angles.txt', skiprows=1)
     if len(list(data.shape)) == 1:
         data = np.array([data])
@@ -93,4 +93,4 @@ def cleanup_directory():
     ]
     main_dir = Path(__file__)
     for f in intermediate_files:
-        (main_dir.parents[1] / f"scripts/{f}").unlink()
+        (main_dir.parents[1] / f"lauepy_scripts/{f}").unlink()
