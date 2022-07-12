@@ -190,7 +190,7 @@ class AutoLaue:
         # TODO: put the euler program for linux/mac/windows in the same directory and select based on current OS
 
         sub.run([
-            f'{self.config["lauepy_dir"]}/scripts/eulerlinux',
+            f'{self.config["lauepy_dir"]}/lauepy_scripts/eulerlinux',
             '-k', '16',
             '-t', '24',
             '-c', '72',
