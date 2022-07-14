@@ -153,6 +153,8 @@ class LaueApp:
             button.pack(side="left", fill='x', padx=5, expand=True)
             self.cfg_buttons.append(button)
 
+        if conf_path is None:
+            conf_path = f"{Path(__file__).parents[2]}/config_example/config.yml"
         self.conf_path = conf_path
         self.config = {key: tk.StringVar(self.root, value="") for key in PARAMS.keys()}
         for val in self.config.values():
@@ -194,7 +196,6 @@ class LaueApp:
                 self.entry_section(frame, "Other", LAUE_OTH, line)
 
             self.input_nb.add(frame, text=name)
-
 
         self.root.mainloop()
 
@@ -326,4 +327,4 @@ class CreateToolTip(object):
 
 
 if __name__ == '__main__':
-    LaueApp("/home/beams7/CXDUSER/34idc-work/2022/LauePUP422/Analysis/lauepy_output/scan_0939/config.yml")
+    LaueApp()
