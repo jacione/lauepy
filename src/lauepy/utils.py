@@ -108,14 +108,15 @@ def read_config(yml_file):
     exp_id = cfg['exp_id']
     scan = cfg['scan']
     alt_id = cfg['alt_id']
+    beamline = cfg['beamline']
     if alt_id is None or alt_id == 'None':
         alt_id = ''
     spec_seq = cfg['spec_seq']
-    cfg['working_dir'] = f"/home/beams7/CXDUSER/34idc-work/{year}/{exp_id}/Analysis/lauepy_output" \
+    cfg['working_dir'] = f"/home/beams/CXDUSER/{beamline}-work/{year}/{exp_id}/Analysis/lauepy_output" \
                          f"/scan_{scan:04}{alt_id}"
-    cfg['data_dir'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/AD34idcLaue_{exp_id}{spec_seq}" \
+    cfg['data_dir'] = f"/home/beams/CXDUSER/{beamline}-data/{year}/{exp_id}/AD34idcLaue_{exp_id}{spec_seq}" \
                       f"/{exp_id}{spec_seq}_S{scan:04}"
-    cfg['spec_file'] = f"/home/beams7/CXDUSER/34idc-data/{year}/{exp_id}/{exp_id}{spec_seq}.spec"
+    cfg['spec_file'] = f"/home/beams/CXDUSER/{beamline}-data/{year}/{exp_id}/{exp_id}{spec_seq}.spec"
     cfg['lauepy_dir'] = f'{Path(__file__).parents[1]}'
 
     # Make sure the data and spec files can be found
