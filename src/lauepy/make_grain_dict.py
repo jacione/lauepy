@@ -69,7 +69,7 @@ def make_grain_dict(config):
         grains[grain]['Avg_Peaks'] = float(np.round(np.mean(grains[grain]['Num_Peaks']), 1))
         grains[grain]['Avg_Count'] = float(np.round(np.mean(grains[grain]['Count']), 1))
         pos = np.array(grains[grain]['Positions'])
-        grains[grain]['COM'] = np.average(pos, axis=0, weights=grains[grain]['Num_Peaks']).tolist()
+        grains[grain]['COM'] = np.average(pos, axis=0, weights=np.array(grains[grain]['Num_Peaks'])).tolist()
 
     with open(f'{working_dir}/grains/grains.json', 'w') as json_file:
         json.dump(grains, json_file)
@@ -129,6 +129,8 @@ def map_grains(config):
     coords[:, 1] *= np.tan(phi)
 
     plt.figure()
+    plt.xlabel('microns')
+    plt.ylabel('microns')
     plt.gca().set_aspect('equal')
     plt.scatter(*coords.T, c='b')
     ts = []
