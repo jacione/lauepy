@@ -1,6 +1,6 @@
 # LauePy
 
-LauePy is a python-based code library that analyzes Laue diffraction patterns collected from a sample---either a polycrystal or separated nanocrystals---to obtain a crystal orientation map. This is a direct alternative to the more common technique of electron backscatter diffraction (EBSD). Unlike EBSD, which requires the sample to be mounted in an electron microscope, Laue mapping is performed in a coherent x-ray (CXR) beamline, making it an excellent complement to other CXR techniques such as Bragg coherent diffraction imaging (BCDI). Furthermore, by using coherent x rays instead of electrons, Laue mapping is able to penetrate deep into the sample, unlike EBSD, which only provides information about the surface orientation.
+LauePy is a python-based code library that analyzes Laue diffraction patterns collected from a sample---either a polycrystal or separated nanocrystals---to obtain a crystal orientation map. This is a direct alternative to the more common technique of electron backscatter diffraction (EBSD). Unlike EBSD, which requires the sample to be mounted in an electron microscope, Laue mapping is performed in a coherent x-ray (CXR) beamline, making it an excellent complement to other CXR techniques such as Bragg coherent diffraction imaging (BCDI). Furthermore, by using coherent x rays instead of electrons, Laue mapping is able to penetrate deep into the sample, whereas EBSD only provides information about the surface orientation.
 
 ## Installation
 
@@ -11,7 +11,8 @@ pip install build
 python -m build
 pip install .
 ```
-Assuming I've done my job, you should be good.
+
+> LauePy makes certain assumptions about the setup, process, and data management of your experiment. These assumptions are based on APS beamline 34-ID-C, where the code was developed. While a limited framework has been laid for the expansion of the software beyond this beamline, it is not currently at a plug-and-play level.
 
 ## Usage
 
@@ -20,6 +21,8 @@ The easiest way to use LauePy is by running
 python lauepy/scripts/gui.py
 ```
 Each tab on the application window has a list of parameters which are linked to a configuration file. When the app is first opened, it loads an example configuration from `lauepy/config_example/config.yml`. Whenever any of the parameters is edited, the buttons to run the software are disabled until you either save or revert your changes.
+
+The following sections describe the parameters on each tab of the application. Additional descriptions can be found in the application by hovering the mouse over the parameter name.
 
 ### General Parameters
 The `General` tab defines the experiment. Editing any of the first four parameters (and saving) will prompt LauePy to create a new working directory containing your `config.yml` file. The working directory structure was defined based on the conventions used at APS beamline 34-ID-C:
@@ -44,19 +47,29 @@ While this should work for any experiment done at that beamline, adjustments may
 
 ### Image prep tab
 
+The image prep routine makes it easier to find Laue peaks. It first extracts a substrate-only image by taking a pixel-wise quantile of the image stack. This keeps only those peaks which persist through the entire image stack. All images (substrate-only included) are then passed through several filters:
+1. A selective median filter replaces "dead" and "hot" pixels with more locally appropriate values. This filter is not modifiable from the application.
+2. A Gaussian filter smooths out pixel-to-pixel noise. The rolling-ball (RB) method for background subtraction (used next) is highly sensitive to this type of noise. If not removed, it will often cause the RB filter to leave much of the original background, as well as many circular artifacts.
+3. A series of rolling-ball filters remove large-scale background features, isolating the Laue peaks as bright points on a dark background.
+
 | Parameter          | Config name                                  | Description                                                                                                                                                                                                               |
 |--------------------|----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Quantile filter    | prep_substrate_quantile                      | Determines the pixel-wise quantile to use when generating a substrate-only image. Recommended value: 0.5                                                                                                                  |
-| Gaussian sigma     | prep_substrate_sigma <br/> prep_sample_sigma | Width used in the Gaussian pre-filter. Generally, a value below 0.5 will reduce the effectiveness of the rolling ball filter, while a value above 1.0 will reduce the visibility of dimmer peaks. Recommended value: 0.75 |
+| Gaussian sigma     | prep_substrate_sigma <br/> prep_sample_sigma | Width used in the Gaussian pre-filter. Generally, a value below 0.5 will reduce the effectiveness of the rolling-ball filter, while a value above 1.0 will reduce the visibility of dimmer peaks. Recommended value: 0.75 |
 | Rolling ball radii | prep_substrate_radii <br/> prep_sample_radii | Radii used for iterative rolling-ball background subtraction. Must be given in [square brackets]. Recommended value: [30, 10, 3]                                                                                          |
 
 ### Peak finding tab
-| Parameter     | Config name                                        | Description                                                                                                                                                                                                          |
-|---------------|----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Threshold     | pkid_substrate_threshold<br/>pkid_sample_threshold | Minimum value of a valid peak, relative to the standard deviation intensity of the mage. A good starting value is 0.2, but the ideal value varies by experiment. Decrease to find more peaks, increase to find less. |
-| Min. distance | pkid_substrate_distance<br/>pkid_sample_distance   | Minimum distance (in pixels) between valid peaks. If two otherwise valid peaks are closer together, only the brighter of the two will be returned.                                                                   |
+
+The peak-finding routine uses `skimage.feature.peak_local_max()` to return the coordinates of local maxima within each image. Substrate peaks are masked during this process, and indexed only on the substrate-only image.
+
+| Parameter     | Config name                                        | Description                                                                                                                                                                                                           |
+|---------------|----------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Threshold     | pkid_substrate_threshold<br/>pkid_sample_threshold | Minimum value of a valid peak, relative to the standard deviation intensity of the image. A good starting value is 0.2, but the ideal value varies by experiment. Decrease to find more peaks, increase to find less. |
+| Min. distance | pkid_substrate_distance<br/>pkid_sample_distance   | Minimum distance (in pixels) between valid peaks. If two otherwise valid peaks are closer together, only the brighter of the two will be returned.                                                                    |
 
 ### Laue indexing tab
+
+This tab has two separate commands 
 
 | Parameter       | Config name                                        | Description                                                                         |
 |-----------------|----------------------------------------------------|-------------------------------------------------------------------------------------|
