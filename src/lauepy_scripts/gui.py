@@ -94,7 +94,7 @@ TIPS = {
     "twin_tolerance": "Maximum crystal misorientation when determining whether two grains are twins."
 }
 
-GEN_TEXT = ["scan", "alt_id", "year", "exp_id", "spec_seq", "beamline", "calibration", "substrate", "sample"]
+GEN_TEXT = ["beamline", "year", "exp_id", "scan", "alt_id", "spec_seq", "calibration", "substrate", "sample"]
 GEN_BOOL = ["show_plots", "verbose"]
 PREP_SUB = ["prep_substrate_quantile", "prep_substrate_sigma", "prep_substrate_radii"]
 PREP_SAM = ["prep_sample_sigma", "prep_sample_radii"]
@@ -131,8 +131,7 @@ class LaueApp:
             "Prepare images": self.run_prep,
             "Find peaks": self.run_peaks,
             "Index peaks": self.run_auto,
-            "Generate macros": self.gen_macro,
-            "Find twins": self.find_twins
+            "Find grains": self.gen_macro,
         }
         for name, fcn in run_fcns.items():
             button = ttk.Button(self.run_frame, text=name, command=fcn)
@@ -211,7 +210,13 @@ class LaueApp:
             alt_id = ""
         self.conf_path = f"/home/beams/CXDUSER/34idc-work/{year}/{exp_id}/Analysis/lauepy_output/scan_{int(scan):04}" \
                          f"{alt_id}/config.yml"
-        ut.save_config({key: str(val.get()) for key, val in self.config.items()}, self.conf_path)
+        try:
+            ut.save_config({key: str(val.get()) for key, val in self.config.items()}, self.conf_path)
+            ut.read_config(self.conf_path)
+        except FileNotFoundError as error:
+            print()
+            print(str(error))
+            return
         for btn in self.run_buttons:
             btn.state(['!disabled'])
         for btn in self.cfg_buttons[1:]:
@@ -252,12 +257,16 @@ class LaueApp:
     def gen_macro(self):
         cfg = ut.read_config(self.conf_path)
         grain.make_grain_dict(cfg)
-
-    def find_twins(self):
         cfg = ut.read_config(self.conf_path)
         if twins.find_possible_twins(cfg):
             twins.find_twins(cfg)
             twins.cleanup_directory()
+
+    def get_calibration(self, _):
+        f = filedialog.askopenfilename()
+        print(f)
+        self.config["calibration"].set(f)
+        self.root.focus_set()
 
     def entry_section(self, parent, heading, entries, line):
         if heading is not None:
@@ -268,7 +277,10 @@ class LaueApp:
             label = ttk.Label(parent, text=f"{PARAMS[key]}")
             label.grid(column=0, row=line, sticky=tk.W)
             CreateToolTip(label, TIPS[key])
-            ttk.Entry(parent, textvariable=val).grid(column=1, row=line, sticky=tk.E, pady=4)
+            enter = ttk.Entry(parent, textvariable=val)
+            enter.grid(column=1, row=line, sticky=tk.E, pady=4)
+            if key == "calibration":
+                enter.bind("<Button>", self.get_calibration)
             line += 1
         return line
 

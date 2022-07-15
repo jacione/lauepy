@@ -70,10 +70,14 @@ def find_substrate_peaks(config, peak_dict):
     structure = np.zeros((15, 15))
     structure[draw.disk((7, 7), 5.5)] = 1
     sub_mask = ndi.binary_dilation(img > threshold, structure=structure)
+
+    # Add the joining lines on the detector to the mask
     sub_mask[254:258] = True
     sub_mask[:, 254:258] = True
     sub_mask[:, 512:516] = True
     sub_mask[:, 770:774] = True
+
+    # Save the substrate mask
     np.save(f"{working_dir}/substrate/substrate_mask.npy", np.array([sub_mask]))
 
     end = time.perf_counter()

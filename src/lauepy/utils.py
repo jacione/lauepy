@@ -120,15 +120,19 @@ def read_config(yml_file):
     cfg['lauepy_dir'] = f'{Path(__file__).parents[1]}'
 
     # Make sure the data and spec files can be found
+    if not Path(cfg['working_dir']).parents[2].exists():
+        raise FileNotFoundError(f'Could not find the specified experiment directory: {Path(cfg["working_dir"]).parents[2]}')
     if not Path(cfg['data_dir']).exists():
-        raise FileNotFoundError('Could not find the specified DATA DIRECTORY. Check config.')
+        raise FileNotFoundError(f'Could not find the specified data directory: {cfg["data_dir"]}')
     if not Path(cfg['spec_file']).exists():
-        raise FileNotFoundError('Could not find the specified SPEC FILE. Check config')
+        raise FileNotFoundError(f'Could not find the specified SPEC file: {cfg["spec_file"]}')
 
     # Load up the calibration data
-    cal_path = f'{Path(cfg["working_dir"]).parents[1]}/DetectorCalibration/{cfg["calibration"]}'
+    cal_path = cfg["calibration"]
     if not cal_path.endswith(".json"):
         cal_path += ".json"
+    if not Path(cal_path).exists():
+        raise FileNotFoundError(f'Could not find the specified calibration file: {cal_path}')
     with open(cal_path) as f:
         cal = json.load(f)
     cfg['det_rotation'] = cal['rot_vec']
@@ -151,7 +155,14 @@ def read_config(yml_file):
 
 def save_config(cfg, yml_file):
     f = Path(yml_file)
+
+    # Check whether the experiment itself exists:
+    if not f.parents[3].exists():
+        raise FileNotFoundError(f"Could not find experiment: \"{f.parents[3]}\"")
+
+    # Check whether the file itself exists.
     if not f.exists():
+        f.parents[1].mkdir(exist_ok=True)
         f.parent.mkdir(exist_ok=True)
         f.touch()
         f.write_text(example.read_text())
