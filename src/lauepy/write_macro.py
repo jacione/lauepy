@@ -23,7 +23,7 @@ def grain_to_macro(config):
             a, b, c, alpha, beta, gamma = sample_params['lattice_params']
         a, b, c = a * 1e10, b * 1e10, c * 1e10
         inp, outp = grain_dict[grain]['Spec_Orientation']
-        filename = f"{config['working_dir']}/grains/{grain}.mac"
+        filename = f"{config['working_dir']}/macros/{grain}.mac"
 
         f = open(filename, "w")
         f.write("U[\"0\"] = {0:.3f}\n".format(a))  # lattice params
