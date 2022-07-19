@@ -1,9 +1,21 @@
 # LauePy
 
-LauePy is a python-based code library that analyzes Laue diffraction patterns collected from a sample---either a polycrystal or separated nanocrystals---to obtain a crystal orientation map. This is a direct alternative to the more common technique of electron backscatter diffraction (EBSD). Unlike EBSD, which requires the sample to be mounted in an electron microscope, Laue mapping is performed in a coherent x-ray (CXR) beamline, making it an excellent complement to other CXR techniques such as Bragg coherent diffraction imaging (BCDI). Furthermore, by using coherent x rays instead of electrons, Laue mapping is able to penetrate deep into the sample, whereas EBSD only provides information about the surface orientation.
+LauePy is a python-based code library that analyzes Laue diffraction patterns collected from many locations on a sample---either a polycrystal or separated nanocrystals---to obtain a crystal orientation map. The Laue diffraction data is collected on a large area detector while scanning a wide-band (or "pink") x-ray beam over a sample. As a complement to Bragg coherent diffraction imaging (BCDI), it has a distinct advantage over the more common orientation-mapping technique of electron backscatter diffraction (EBSD). Because scanning Laue analysis and BCDI use almost identical setups, one can be performed directly after the other simply by inserting or removing a monochrometor.
 
-## Installation
+## Installation & setup
 
+### Requirements
+LauePy makes certain assumptions about the setup, process, and data management of your experiment. These assumptions are based on APS beamline 34-ID-C, where the code was developed.
+
+Current requirements:
+* Linux operating system (for the compiled Euler binary)
+* Python 3.7 (other versions may work but haven't been tested)
+* NVidia graphics card (for CUDA-accelerated calculation)
+* The experiment must be managed in [SPEC](https://certif.com/content/spec/).
+
+While a limited framework has been laid for the expansion of the software beyond this beamline, it is not currently at a plug-and-play level.
+
+### Install
 Clone the git repository [here](https://github.com/jacione/lauepy)! Once you've downloaded it, you'll need to install it, preferably in its own environment. Navigate your terminal to the repository and run
 ```
 pip install --upgrade pip
@@ -12,38 +24,45 @@ python -m build
 pip install .
 ```
 
-> LauePy makes certain assumptions about the setup, process, and data management of your experiment. These assumptions are based on APS beamline 34-ID-C, where the code was developed. While a limited framework has been laid for the expansion of the software beyond this beamline, it is not currently at a plug-and-play level.
-
 ## Usage
+
+> Note: If you're using LauePy, there's a decent chance you're doing so at APS beamline 34-ID-C. In this case, it is recommended to run LauePy on Sayre via SSH.
 
 The easiest way to use LauePy is by running
 ```
-python lauepy/scripts/gui.py
+python lauepy/src/lauepy_scripts/gui.py
 ```
 Each tab on the application window has a list of parameters which are linked to a configuration file. When the app is first opened, it loads an example configuration from `lauepy/config_example/config.yml`. Whenever any of the parameters is edited, the buttons to run the software are disabled until you either save or revert your changes.
 
 The following sections describe the parameters on each tab of the application. Additional descriptions can be found in the application by hovering the mouse over the parameter name.
 
 ### General Parameters
-The `General` tab defines the experiment. Editing any of the first four parameters (and saving) will prompt LauePy to create a new working directory containing your `config.yml` file. The working directory structure was defined based on the conventions used at APS beamline 34-ID-C:
+| Parameter     | Config name | Description                                                                                                                                                                                            |
+|---------------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Scan          | scan        | Scan number in the experiment's SPEC file                                                                                                                                                              |
+| Alternate ID  | alt_id      | Alternative identifier to differentiate multiple analyses of the same scan. This string will appear as a suffix to the working directory name. To leave off, enter "None".                             |
+| Year          | year        | Year in which the data was taken                                                                                                                                                                       |
+| Experiment ID | exp_id      | Working directory name for this beamtime (e.g. "LauePUP422")                                                                                                                                           |
+| SPEC sequence | spec_seq    | Differentiates between multiple SPEC files created during a single beamtime. Appears as a suffix on the SPEC file name.                                                                                |
+| Beamline      | beamline    | Identifies the beamline where this experiment took place (e.g. "34idc")                                                                                                                                |
+| Calibration   | calibration | Detector calibration filepath. Unlike other parameters, clicking on the entry field will open a load-file dialog, which must be used to locate the calibration file.                                   |
+| Substrate     | substrate   | Chemical formula for the substrate material. Must have a corresponding file in `lauepy/src/crystals`. If there is no crystal file for the material used in your experiment, you will need to make one. |
+| Sample        | sample      | Chemical formula for the sample material (see above).                                                                                                                                                  |
+| Show plots    | show_plots  | If true, produce and save plots at various stages of analysis                                                                                                                                          |
+| Verbose       | verbose     | If true, print verbose output while running                                                                                                                                                            |
+The "General" tab defines the experiment. Editing any of the first four parameters (and saving) will prompt LauePy to create a new working directory containing your `config.yml` file. The working directory is defined based on the conventions used at APS beamline 34-ID-C, as well as on the parameters provided by the user:
 ```
 /home/beams/CXDUSER/{beamline}-work/{year}/{exp_id}/Analysis/lauepy_output/scan_{scan}{alt_id}
 ```
-While this should work for any experiment done at that beamline, adjustments may be required for LauePy to work with other file systems.
+Similarly, LauePy constructs paths for the data
+```
+/home/beams/CXDUSER/{beamline}-data/{year}/{exp_id}/AD34idcLaue_{exp_id}{spec_seq}/{exp_id}{spec_seq}_S{scan:04}
+```
+and for the SPEC file
+```
+/home/beams/CXDUSER/{beamline}-data/{year}/{exp_id}/{exp_id}{spec_seq}.spec
+```
 
-| Parameter     | Config name | Description                                                                                                                                                                                              |
-|---------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Scan          | scan        | Scan number in the experiment's SPEC file                                                                                                                                                                |
-| Alternate ID  | alt_id      | Alternative identifier to differentiate multiple analyses of the same scan. This string will appear as a suffix to the working directory name. To leave off, enter "None".                               |
-| Year          | year        | Year in which the data was taken                                                                                                                                                                         |
-| Experiment ID | exp_id      | Working directory name for this beamtime (e.g. "LauePUP422")                                                                                                                                             |
-| SPEC sequence | spec_seq    | Differentiates between multiple SPEC files created during a single beamtime. Appears as a suffix on the SPEC file name.                                                                                  |
-| Beamline      | beamline    | Identifies the beamline where this experiment took place (e.g. "34idc")                                                                                                                                  |
-| Calibration   | calibration | Detector calibration filename. This file will be loaded from the                                                                                                                                         |
-| Substrate     | substrate   | Chemical formula for the substrate material. Must have a corresponding file in `lauepy/src/crystals`. If there is no crystal file for the material used in your experiment, you will need to create one. |
-| Sample        | sample      | Chemical formula for the sample material (see above).                                                                                                                                                    |
-| Show plots    | show_plots  | If true, produce and save plots at various stages of analysis                                                                                                                                            |
-| Verbose       | verbose     | If true, print verbose output while running                                                                                                                                                              |
 
 ### Image prep tab
 
@@ -60,7 +79,7 @@ The image prep routine makes it easier to find Laue peaks. It first extracts a s
 
 ### Peak finding tab
 
-The peak-finding routine uses `skimage.feature.peak_local_max()` to return the coordinates of local maxima within each image. Substrate peaks are masked during this process, and indexed only on the substrate-only image.
+The peak-finding routine uses `skimage.feature.peak_local_max()` to return the coordinates of local maxima within each image. During this process, the substrate peaks are indexed first, using the substrate-only composite image. Then a mask is generated by taking a binary dilation of the set of all pixels whose values were above the substrate peak threshold. Applying this mask to the original image stack effectively removes the substrate peaks from the data, allowing the routine to focus instead on the (typically much dimmer) sample peaks. The mask also includes three columns and one row (each two pixels wide) which have been observed to respond differently from the rest of the detector.
 
 | Parameter     | Config name                                        | Description                                                                                                                                                                                                           |
 |---------------|----------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -69,17 +88,56 @@ The peak-finding routine uses `skimage.feature.peak_local_max()` to return the c
 
 ### Laue indexing tab
 
-This tab has two separate commands 
+This tab deals with the actual Laue analysis. At the heart of this analysis is a compiled binary called Euler, taken from [LaueGo](https://github.com/34IDE/LaueGo), a software library developed at APS beamline 34-ID-E. Euler determines the most likely crystal orientation based on the location of Laue peaks in each frame, the lattice parameters of the diffracting material, and several tolerance factors defined in this tab.
+
+Once the Laue diffraction patterns have been indexed, patterns that appear over multiple frames are grouped into "grains". For each grain, the frames' corresponding beam positions are averaged, weighted with the number of grain-specific peaks that appear in that frame, to determine the most likely position of the grain itself. The grain orientations are also compared to determine which pairs of grains are likely to be twin-related.
 
 | Parameter       | Config name                                        | Description                                                                         |
 |-----------------|----------------------------------------------------|-------------------------------------------------------------------------------------|
 | Misorientation  | laue_substrate_mis_err<br/>laue_sample_mis_err     | Maximum misorientation for two Laue diffraction patterns to be considered the same. |
 | Error tolerance | laue_substrate_tolerance<br/>laue_sample_tolerance | Maximum angular error (peak-wise average) for indexed Laue patterns.                |
 | Grain tolerance | grain_tolerance                                    | Maximum misorientation for two Laue diffraction patterns to be considered the same. |
-| Grain threshold | grain_threshold                                    | I don't think this actually does anything...                                        |
+| Grain threshold | grain_threshold                                    | I don't know that this actually does anything...                                    |
 | Twin tolerance  | twin_tolerance                                     | Maximum crystal misorientation when determining whether two grains are twins        |
 
-If you're more comfortable with a command-line interface, there are other files in the `scripts` directory that do all the same things, and can be run one after another.
+### Output
+After everything has run, the working directory (defined above) will contain the following:
+
+```
+scan_####
+├── config.yml
+├── clean_images
+│   ├── img_00000.tiff
+│   ├── ...
+│   └── img_#####.tiff
+├── grains
+│   ├── grains.json
+│   ├── grain_1.tiff
+│   ├── ...
+│   └── grain_#.tiff
+├── macros
+│   ├── grain_1.mac
+│   ├── ...
+│   └── grain_#.mac
+├── peaks
+│   ├── Index.txt
+│   ├── patterns.json
+│   ├── peaks.json
+│   ├── Peaks.txt
+│   └── overlays
+│       ├── frame_00000.png
+│       ├── ...
+│       └── frame_#####.png
+├── substrate
+│   ├── rb_background.tiff
+│   ├── substrate_mask.npy
+│   └── substrate_peaks.tiff
+└── clean_images
+    ├── angle_list.txt
+    ├── hiconf_twins.txt
+    └── possible_twins.txt
+```
+Most of these are primarily for internal use, but can be useful when debugging. The most important output files are the grain macros. These essentially program a specific grain's position, orientation, and lattice parameters into SPEC. With this information, SPEC can then calculate where to position both the sample and the diffractometer arm in order to measure a specific Bragg peak.
 
 ## How to contribute
 
