@@ -58,7 +58,6 @@ def find_substrate_peaks(config, peak_dict):
         print(f'Rel. peak threshold: {config["pkid_substrate_threshold"]}')
         print(f'Abs. peak threshold: {threshold:0.3}')
 
-
     # Find the peaks using skimage.feature.peak_local_max
     peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
     peak_coords = np.fliplr(peak_coords)  # This is so that they go more nicely into the following functions
@@ -67,9 +66,12 @@ def find_substrate_peaks(config, peak_dict):
     peak_dict['substrate'] = {'coords': peak_coords.tolist(), 'num_peaks': peak_coords.shape[0]}
 
     # Create a mask to block out the substrate peaks from the individual images
-    structure = np.zeros((15, 15))
-    structure[draw.disk((7, 7), 5.5)] = 1
-    sub_mask = ndi.binary_dilation(img > threshold, structure=structure)
+    mask_threshold = np.std(img) * config['pkid_mask_threshold']
+    r = config["pkid_mask_dilation"]
+    s = int(r+2)
+    structure = np.zeros((2*s+1, 2*s+1))
+    structure[draw.disk((s, s), r)] = 1
+    sub_mask = ndi.binary_dilation(img > mask_threshold, structure=structure)
 
     # Add the joining lines on the detector to the mask
     sub_mask[254:258] = True
@@ -152,26 +154,26 @@ def find_sample_peaks(config, peak_dict):
         print(f'Avg peaks per frame: {mean_peaks}')
         print(f'Time to calculate: {end-start: 0.3} sec')
 
-    if config['show_plots']:
-        print()
-        print("Overlaying peaks...")
-        print("This is a very slow process. If you're confident in your peakfinding parameters, you may want to"
-              "disable the show_plots parameter.")
-        plot_dir = Path(f"{config['working_dir']}/peaks/overlays")
-        if plot_dir.exists():
-            for p in plot_dir.iterdir():
-                p.unlink()
-        else:
-            plot_dir.mkdir()
-        plt.figure(tight_layout=True, figsize=(10, 5), dpi=150)
-        for i, frame in enumerate(pbar(img_stack)):
-            plt.cla()
-            c = np.array(peak_dict[f'frame_{i:05}']['coords']).T
-            if not len(c):
-                continue
-            plt.imshow(frame, vmax=np.quantile(frame, 0.999))
-            plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
-            plt.savefig(f"{plot_dir}/frame_{i:0>5}.png")
+    # if config['show_plots']:
+    #     print()
+    #     print("Overlaying peaks...")
+    #     print("This is a very slow process. If you're confident in your peakfinding parameters, you may want to"
+    #           "disable the show_plots parameter.")
+    #     plot_dir = Path(f"{config['working_dir']}/peaks/overlays")
+    #     if plot_dir.exists():
+    #         for p in plot_dir.iterdir():
+    #             p.unlink()
+    #     else:
+    #         plot_dir.mkdir()
+    #     plt.figure(tight_layout=True, figsize=(10, 5), dpi=150)
+    #     for i, frame in enumerate(pbar(img_stack)):
+    #         plt.cla()
+    #         c = np.array(peak_dict[f'frame_{i:05}']['coords']).T
+    #         if not len(c):
+    #             continue
+    #         plt.imshow(frame, vmax=np.quantile(frame, 0.999))
+    #         plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
+    #         plt.savefig(f"{plot_dir}/frame_{i:0>5}.png")
 
     return peak_dict
 

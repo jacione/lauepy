@@ -25,6 +25,8 @@ prep_sample_radii: [100, 30, 10]
 ### Peak-indexing parameters (all start with "pkid_")
 pkid_substrate_threshold: 0.4
 pkid_substrate_distance: 25
+pkid_mask_threshold: 0.4
+pkid_mask_dilation: 5.5
 pkid_sample_threshold: 0.4
 pkid_sample_distance: 10
 

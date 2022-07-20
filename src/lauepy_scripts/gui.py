@@ -29,9 +29,11 @@ PARAMS = {
     "prep_substrate_radii": "Rolling ball radii",
     "prep_sample_sigma": "Gaussian filter sigma",
     "prep_sample_radii": "Rolling ball radii",
-    "pkid_substrate_threshold": "Threshold",
+    "pkid_substrate_threshold": "Peak threshold",
     "pkid_substrate_distance": "Min. distance",
-    "pkid_sample_threshold": "Threshold",
+    "pkid_mask_threshold": "Mask threshold",
+    "pkid_mask_dilation": "Mask dilation",
+    "pkid_sample_threshold": "Peak threshold",
     "pkid_sample_distance": "Min. distance",
     # "laue_substrate_goodness": "Goodness",
     "laue_substrate_mis_err": "Misorientation",
@@ -80,6 +82,9 @@ TIPS = {
                                 "Decrease to find more peaks, increase to find less.",
     "pkid_substrate_distance": "Minimum distance (in pixels) between valid peaks. If two otherwise valid peaks are "
                                "closer together, only the brighter of the two will be returned.",
+    "pkid_mask_threshold": "Threshold used for masking substrate peaks. Setting this different from the substrate peak"
+                           "threshold may lead to unexpected results.",
+    "pkid_mask_dilation": "Radius of binary dilation applied to the substrate mask \nRecommended value: 3.0",
     "pkid_sample_threshold": "Minimum value of a valid peak, relative to the standard deviation intensity of the "
                              "image. A good starting value is 0.2, but the ideal value varies by experiment. "
                              "Decrease to find more peaks, increase to find less.",
@@ -98,7 +103,7 @@ GEN_TEXT = ["beamline", "year", "exp_id", "scan", "alt_id", "spec_seq", "calibra
 GEN_BOOL = ["show_plots", "verbose"]
 PREP_SUB = ["prep_substrate_quantile", "prep_substrate_sigma", "prep_substrate_radii"]
 PREP_SAM = ["prep_sample_sigma", "prep_sample_radii"]
-PKID_SUB = ["pkid_substrate_threshold", "pkid_substrate_distance"]
+PKID_SUB = ["pkid_substrate_threshold", "pkid_substrate_distance", "pkid_mask_threshold", "pkid_mask_dilation"]
 PKID_SAM = ["pkid_sample_threshold", "pkid_sample_distance"]
 # LAUE_SUB = ["laue_substrate_goodness", "laue_substrate_mis_err", "laue_substrate_tolerance", "laue_substrate_frequency",
 #             "laue_substrate_comb_sub", "laue_substrate_times"]
@@ -107,15 +112,6 @@ PKID_SAM = ["pkid_sample_threshold", "pkid_sample_distance"]
 LAUE_SUB = ["laue_substrate_mis_err", "laue_substrate_tolerance"]
 LAUE_SAM = ["laue_sample_mis_err", "laue_sample_tolerance"]
 LAUE_OTH = ["grain_tolerance", "grain_threshold", "twin_tolerance"]
-
-BOOL_VARS = ["show_plots", "verbose"]
-STR_VARS = ["scan", "alt_id", "year", "exp_id", "spec_seq", "beamline", "calibration", "substrate", "sample"]
-NUM_VARS = ["prep_substrate_quantile", "prep_substrate_sigma", "prep_substrate_radii", "prep_sample_sigma",
-            "prep_sample_radii", "pkid_substrate_threshold", "pkid_substrate_distance", "pkid_sample_threshold",
-            "pkid_sample_distance", "laue_substrate_goodness", "laue_substrate_mis_err", "laue_substrate_tolerance",
-            "laue_substrate_frequency", "laue_substrate_comb_sub", "laue_substrate_times", "laue_sample_goodness",
-            "laue_sample_mis_err", "laue_sample_tolerance", "laue_sample_frequency", "laue_sample_comb_sub",
-            "laue_sample_times", "grain_tolerance", "grain_threshold", "twin_tolerance"]
 
 
 class LaueApp:
@@ -339,4 +335,4 @@ class CreateToolTip(object):
 
 
 if __name__ == '__main__':
-    LaueApp()
+    LaueApp("/home/beams/CXDUSER/34idc-work/2022/LauePUP422/Analysis/lauepy_output/scan_0939/config.yml")
