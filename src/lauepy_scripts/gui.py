@@ -95,7 +95,8 @@ TIPS = {
     "laue_sample_mis_err": "Maximum misorientation for two Laue diffraction patterns to be considered the same.",
     "laue_sample_tolerance": "Maximum angular error (peak-wise average) for indexed Laue patterns.",
     "grain_tolerance": "Maximum misorientation for two Laue diffraction patterns to be considered the same.",
-    "grain_threshold": "I don't think this actually does anything...",
+    "grain_threshold": "Maximum number of frames that a grain can appear in, used to filter out incorrectly indexed "
+                       "substrate peaks that didn't get filtered out.",
     "twin_tolerance": "Maximum crystal misorientation when determining whether two grains are twins."
 }
 

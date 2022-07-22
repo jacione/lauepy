@@ -86,19 +86,19 @@ def make_grain_dict(config):
     with open(f'{working_dir}/peaks/patterns.json', 'w') as json_file:
         json.dump(pattern_dict, json_file)
     if config['verbose']:
-        print_grains(grains)
+        print_grains(grains, config)
     if config['show_plots']:
         map_grains(config)
     return
 
 
-def print_grains(grains):
+def print_grains(grains, config):
     print('################### GRAIN DICT #######################')
     print(f'{"Grain":>10}{"RMS":>8}{"Peaks":>7}{"Frames":>8}   {"Position":<16}{"HKL-in":<16}{"HKL-out":<16}')
     for grain in grains:
         g = grains[grain]
         num_frames = len(g['Frames'])
-        if (num_frames <= 1 and g['Avg_Peaks'] <= 3.01) or num_frames > 100:
+        if (num_frames <= 1 and g['Avg_Peaks'] <= 3.01) or num_frames > config["grain_threshold"]:
             continue
         hkl_in = [round(x) for x in g['Spec_Orientation'][0]]
         hkl_out = [round(x) for x in g['Spec_Orientation'][1]]
@@ -120,7 +120,7 @@ def map_grains(config):
         grains = {
             grain[6:]: g["COM"]
             for grain, g in json.load(f).items()
-            if (1 < len(g['Frames']) < 100 or g['Avg_Peaks'] > 3.01) and grain != "substrate"
+            if (1 < len(g['Frames']) < config["grain_threshold"] or g['Avg_Peaks'] > 3.01) and grain != "substrate"
         }
 
     phi = np.abs(np.deg2rad(90-phi))
