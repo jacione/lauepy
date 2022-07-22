@@ -25,9 +25,9 @@ PARAMS = {
     "show_plots": "Show plots",
     "verbose": "Verbose",
     "prep_substrate_quantile": "Quantile filter",
-    "prep_substrate_sigma": "Gaussian filter sigma",
+    "prep_substrate_sigma": "Gaussian sigma",
     "prep_substrate_radii": "Rolling ball radii",
-    "prep_sample_sigma": "Gaussian filter sigma",
+    "prep_sample_sigma": "Gaussian sigma",
     "prep_sample_radii": "Rolling ball radii",
     "pkid_substrate_threshold": "Peak threshold",
     "pkid_substrate_distance": "Min. distance",
@@ -106,10 +106,6 @@ PREP_SUB = ["prep_substrate_quantile", "prep_substrate_sigma", "prep_substrate_r
 PREP_SAM = ["prep_sample_sigma", "prep_sample_radii"]
 PKID_SUB = ["pkid_substrate_threshold", "pkid_substrate_distance", "pkid_mask_threshold", "pkid_mask_dilation"]
 PKID_SAM = ["pkid_sample_threshold", "pkid_sample_distance"]
-# LAUE_SUB = ["laue_substrate_goodness", "laue_substrate_mis_err", "laue_substrate_tolerance", "laue_substrate_frequency",
-#             "laue_substrate_comb_sub", "laue_substrate_times"]
-# LAUE_SAM = ["laue_sample_goodness", "laue_sample_mis_err", "laue_sample_tolerance", "laue_sample_frequency",
-#             "laue_sample_comb_sub", "laue_sample_times"]
 LAUE_SUB = ["laue_substrate_mis_err", "laue_substrate_tolerance"]
 LAUE_SAM = ["laue_sample_mis_err", "laue_sample_tolerance"]
 LAUE_OTH = ["grain_tolerance", "grain_threshold", "twin_tolerance"]
@@ -120,46 +116,16 @@ class LaueApp:
         self.root = tk.Tk()
         self.root.title("LauePy")
 
-        self.run_buttons = []
-        self.run_frame = ttk.Frame(self.root)
-        self.run_frame['padding'] = 10
-        self.run_frame.grid(column=1, row=0)
-        run_fcns = {
-            "Prepare images": self.run_prep,
-            "Find peaks": self.run_peaks,
-            "Index peaks": self.run_auto,
-            "Find grains": self.gen_macro,
-        }
-        for name, fcn in run_fcns.items():
-            button = ttk.Button(self.run_frame, text=name, command=fcn)
-            button.pack(side="top", fill='x', pady=5)
-            self.run_buttons.append(button)
-
-        self.cfg_buttons = []
-        self.cfg_frame = ttk.Frame(self.root)
-        self.cfg_frame['padding'] = 5
-        self.cfg_frame.grid(column=0, row=1, columnspan=2, sticky="EW")
-        cfg_fcns = {
-            "Load": self.load_config,
-            "Revert": self.revert_config,
-            "Save": self.save_config,
-        }
-        for name, fcn in cfg_fcns.items():
-            button = ttk.Button(self.cfg_frame, text=name, command=fcn)
-            button.pack(side="left", fill='x', padx=5, expand=True)
-            self.cfg_buttons.append(button)
-
         if conf_path is None:
             conf_path = f"{Path(__file__).parents[2]}/config_example/config.yml"
         self.conf_path = conf_path
         self.config = {key: tk.StringVar(self.root, value="") for key in PARAMS.keys()}
-        for val in self.config.values():
-            val.trace_add("write", self.disable_buttons)
         self.load_config(conf_path)
 
         self.input_nb = ttk.Notebook(self.root)
         self.input_nb.grid(column=0, row=0)
         tab_names = ["General", "Image prep", "Peak finding", "Laue indexing"]
+        self.tabs = {}
 
         # Create the tabs on the main window
         for j, name in enumerate(tab_names):
@@ -167,39 +133,54 @@ class LaueApp:
             frame['padding'] = 10
             frame.grid(column=0, row=0)
             frame.columnconfigure(0, weight=1)
-            frame.columnconfigure(1, weight=1)
-            line = 0
+            frame.columnconfigure(1, weight=2)
+            self.tabs[name] = frame
 
-            if j == 0:  # Create the general tab
-                line = self.entry_section(frame, None, GEN_TEXT, line)
-                for i, key in enumerate(GEN_BOOL):
-                    val = self.config[key]
-                    ttk.Checkbutton(
-                        frame, variable=val, onvalue="True", offvalue="False", text=PARAMS[key]
-                    ).grid(column=i, row=line, pady=4)
+        # Create the general tab
+        line = self.entry_section(self.tabs["General"], None, GEN_TEXT, 0)
+        for i, key in enumerate(GEN_BOOL):
+            val = self.config[key]
+            ttk.Checkbutton(
+                self.tabs["General"], variable=val, onvalue="True", offvalue="False", text=PARAMS[key]
+            ).grid(column=i, row=line, pady=4)
+        self.button_section(self.tabs["General"], line+1,
+                            {"Load configuration": self.load_config,
+                             "Revert changes": self.revert_config,
+                             "Run ALL routines": self.run_all})
 
-            if j == 1:  # Create the image prep tab
-                line = self.entry_section(frame, "Substrate", PREP_SUB, line)
-                self.entry_section(frame, "Sample", PREP_SAM, line)
+        # Create the image prep tab
+        line = self.entry_section(self.tabs["Image prep"], "Substrate", PREP_SUB, 0)
+        line = self.entry_section(self.tabs["Image prep"], "Sample", PREP_SAM, line)
+        self.button_section(self.tabs["Image prep"], line,
+                            {"Extract substrate-only image": self.run_prep_sub,
+                             "Apply bkgd removal to images": self.run_prep_sam,
+                             "Run all of the above": self.run_prep})
 
-            if j == 2:  # Create the peak finding tab
-                line = self.entry_section(frame, "Substrate", PKID_SUB, line)
-                self.entry_section(frame, "Sample", PKID_SAM, line)
+        # Create the peak finding tab
+        line = self.entry_section(self.tabs["Peak finding"], "Substrate", PKID_SUB, 0)
+        line = self.entry_section(self.tabs["Peak finding"], "Sample", PKID_SAM, line)
+        self.button_section(self.tabs["Peak finding"], line,
+                            {"Find substrate peaks": self.run_peaks_sub,
+                             "Find sample peaks": self.run_peaks_sam,
+                             "Run all of the above": self.run_peaks})
 
-            if j == 3:  # Create the Laue indexing tab
-                line = self.entry_section(frame, "Substrate", LAUE_SUB, line)
-                line = self.entry_section(frame, "Sample", LAUE_SAM, line)
-                self.entry_section(frame, "Other", LAUE_OTH, line)
+        # Create the Laue indexing tab
+        line = self.entry_section(self.tabs["Laue indexing"], "Substrate", LAUE_SUB, 0)
+        line = self.entry_section(self.tabs["Laue indexing"], "Sample", LAUE_SAM, line)
+        line = self.entry_section(self.tabs["Laue indexing"], "Grains/twins", LAUE_OTH, line)
+        self.button_section(self.tabs["Laue indexing"], line,
+                            {"Index Laue patterns": self.run_laue_index,
+                             "Generate grain macros": self.run_laue_grains,
+                             "Find twin-related grains": self.run_laue_twins,
+                             "Run all of the above": self.run_laue})
 
+        for name, frame in self.tabs.items():
             self.input_nb.add(frame, text=name)
 
         self.root.mainloop()
 
-    def disable_buttons(self, *_):
-        for btn in self.run_buttons:
-            btn.state(['disabled'])
-        for btn in self.cfg_buttons[1:]:
-            btn.state(['!disabled'])
+    def do_nothing(self):
+        pass
 
     def save_config(self):
         [year, exp_id, scan, alt_id] = [self.config[key].get() for key in ("year", "exp_id", "scan", "alt_id")]
@@ -213,11 +194,8 @@ class LaueApp:
         except FileNotFoundError as error:
             print()
             print(str(error))
-            return
-        for btn in self.run_buttons:
-            btn.state(['!disabled'])
-        for btn in self.cfg_buttons[1:]:
-            btn.state(['disabled'])
+            return False
+        return True
 
     def load_config(self, conf_path=None):
         if conf_path is None:
@@ -232,33 +210,6 @@ class LaueApp:
     def revert_config(self):
         self.load_config(self.conf_path)
 
-    def run_prep(self):
-        cfg = ut.read_config(self.conf_path)
-        prep.extract_substrate(cfg)
-        prep.cleanup_images(cfg)
-
-    def run_peaks(self):
-        cfg = ut.read_config(self.conf_path)
-        peak_dict = pk.find_substrate_peaks(cfg, {})
-        peak_dict = pk.find_sample_peaks(cfg, peak_dict)
-        peak_dict = pk.record_positions(cfg, peak_dict)
-        pk.save_peaks(cfg, peak_dict)
-
-    def run_auto(self):
-        cfg = ut.read_config(self.conf_path)
-        for p in Path(f"{cfg['working_dir']}/grains").iterdir():
-            p.unlink()
-        sim = al.AutoLaue(cfg)
-        sim.index()
-
-    def gen_macro(self):
-        cfg = ut.read_config(self.conf_path)
-        grain.make_grain_dict(cfg)
-        cfg = ut.read_config(self.conf_path)
-        if twins.find_possible_twins(cfg):
-            twins.find_twins(cfg)
-            twins.cleanup_directory()
-
     def get_calibration(self, _):
         f = filedialog.askopenfilename()
         print(f)
@@ -267,7 +218,7 @@ class LaueApp:
 
     def entry_section(self, parent, heading, entries, line):
         if heading is not None:
-            ttk.Label(parent, text=heading, font=("Arial", 14)).grid(column=0, row=line, sticky=tk.SW, pady=4)
+            ttk.Label(parent, text=heading, font=("Arial", 13)).grid(column=0, row=line, sticky=tk.SW, pady=4)
             line += 1
         for key in entries:
             val = self.config[key]
@@ -275,11 +226,117 @@ class LaueApp:
             label.grid(column=0, row=line, sticky=tk.W)
             CreateToolTip(label, TIPS[key])
             enter = ttk.Entry(parent, textvariable=val)
-            enter.grid(column=1, row=line, sticky=tk.E, pady=4)
+            enter.grid(column=1, row=line, sticky=tk.EW, pady=4)
             if key == "calibration":
                 enter.bind("<Button>", self.get_calibration)
             line += 1
         return line
+
+    @staticmethod
+    def button_section(parent, line, buttons):
+        ttk.Separator(parent, orient='horizontal').grid(column=0, row=line, columnspan=2, pady=5, sticky=tk.EW)
+        miniframe = ttk.Frame(parent)
+        miniframe.grid(column=0, row=line+1, columnspan=2)
+        for label, command in buttons.items():
+            ttk.Button(miniframe, text=label, command=command).pack(pady=5, fill="x")
+
+    # These are the commands that actually run the code.
+    # Every method below this comment MUST start with self.save_config()
+    def run_all(self):
+        if self.save_config():
+            # Load the config file
+            cfg = ut.read_config(self.conf_path)
+
+            # Image prep
+            prep.extract_substrate(cfg)
+            prep.cleanup_images(cfg)
+
+            # Peak finding
+            peak_dict = pk.find_substrate_peaks(cfg, {})
+            peak_dict = pk.find_sample_peaks(cfg, peak_dict)
+            peak_dict = pk.record_positions(cfg, peak_dict)
+            pk.save_peaks(cfg, peak_dict)
+
+            # Laue indexing
+            for p in Path(f"{cfg['working_dir']}/grains").iterdir():
+                p.unlink()
+            sim = al.AutoLaue(cfg)
+            sim.index()
+
+            # Grain finding
+            grain.make_grain_dict(cfg)
+
+            # Twin finding
+            if twins.find_possible_twins(cfg):
+                twins.find_twins(cfg)
+                twins.cleanup_directory()
+
+    def run_prep(self):
+        if self.save_config():
+            cfg = ut.read_config(self.conf_path)
+            prep.extract_substrate(cfg)
+            prep.cleanup_images(cfg)
+
+    def run_prep_sub(self):
+        if self.save_config():
+            cfg = ut.read_config(self.conf_path)
+            prep.extract_substrate(cfg)
+
+    def run_prep_sam(self):
+        if self.save_config():
+            cfg = ut.read_config(self.conf_path)
+            prep.cleanup_images(cfg)
+
+    def run_peaks(self):
+        if self.save_config():
+            cfg = ut.read_config(self.conf_path)
+            peak_dict = pk.find_substrate_peaks(cfg, {})
+            peak_dict = pk.find_sample_peaks(cfg, peak_dict)
+            peak_dict = pk.record_positions(cfg, peak_dict)
+            pk.save_peaks(cfg, peak_dict)
+
+    def run_peaks_sub(self):
+        if self.save_config():
+            cfg = ut.read_config(self.conf_path)
+            peak_dict = pk.load_peaks(cfg)
+            peak_dict = pk.find_substrate_peaks(cfg, peak_dict)
+            pk.save_peaks(cfg, peak_dict)
+
+    def run_peaks_sam(self):
+        if self.save_config():
+            cfg = ut.read_config(self.conf_path)
+            peak_dict = pk.load_peaks(cfg)
+            peak_dict = pk.find_sample_peaks(cfg, peak_dict)
+            peak_dict = pk.record_positions(cfg, peak_dict)
+            pk.save_peaks(cfg, peak_dict)
+
+    def run_laue(self):
+        if self.save_config():
+            cfg = ut.read_config(self.conf_path)
+            sim = al.AutoLaue(cfg)
+            sim.index()
+            grain.make_grain_dict(cfg)
+            if twins.find_possible_twins(cfg):
+                twins.find_twins(cfg)
+                twins.cleanup_directory()
+
+    def run_laue_index(self):
+        if self.save_config():
+            cfg = ut.read_config(self.conf_path)
+            sim = al.AutoLaue(cfg)
+            sim.index()
+
+    def run_laue_grains(self):
+        if self.save_config():
+            cfg = ut.read_config(self.conf_path)
+            grain.make_grain_dict(cfg)
+
+    def run_laue_twins(self):
+        if self.save_config():
+            cfg = ut.read_config(self.conf_path)
+            if twins.find_possible_twins(cfg):
+                twins.find_twins(cfg)
+                twins.cleanup_directory()
 
 
 class CreateToolTip(object):

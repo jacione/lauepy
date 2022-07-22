@@ -19,8 +19,11 @@ def save_peaks(config, peak_dict):
 
 
 def load_peaks(config):
-    with open(f"{config['working_dir']}/peaks/peaks.json", 'r') as f:
-        return json.load(f)
+    try:
+        with open(f"{config['working_dir']}/peaks/peaks.json", 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
 
 
 def find_substrate_peaks(config, peak_dict):

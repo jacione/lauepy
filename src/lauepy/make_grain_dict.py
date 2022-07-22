@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,7 +12,12 @@ from src.lauepy.write_macro import grain_to_macro
 
 def make_grain_dict(config):
     print('Grouping patterns into grains...')
+
     working_dir = config['working_dir']
+    for p in Path(f"{working_dir}/grains").iterdir():
+        p.unlink()
+    for p in Path(f"{working_dir}/macros").iterdir():
+        p.unlink()
     with open(f'{working_dir}/peaks/patterns.json', 'r') as f:
         pattern_dict = json.load(f)
     grains = {}
