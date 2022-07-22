@@ -142,31 +142,47 @@ def find_sample_peaks(config, peak_dict):
 
     if config['verbose']:
         print(f'Number of peaks found: {total_peaks}')
-        print(f'Avg peaks per frame: {mean_peaks:.3f}')
-        print(f'Time to calculate: {end-start:.3f} sec')
-
-    # if config['show_plots']:
-    #     print()
-    #     print("Overlaying peaks...")
-    #     print("This is a very slow process. If you're confident in your peakfinding parameters, you may want to"
-    #           "disable the show_plots parameter.")
-    #     plot_dir = Path(f"{config['working_dir']}/peaks/overlays")
-    #     if plot_dir.exists():
-    #         for p in plot_dir.iterdir():
-    #             p.unlink()
-    #     else:
-    #         plot_dir.mkdir()
-    #     plt.figure(tight_layout=True, figsize=(10, 5), dpi=150)
-    #     for i, frame in enumerate(pbar(img_stack)):
-    #         plt.cla()
-    #         c = np.array(peak_dict[f'frame_{i:05}']['coords']).T
-    #         if not len(c):
-    #             continue
-    #         plt.imshow(frame, vmax=np.quantile(frame, 0.999))
-    #         plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
-    #         plt.savefig(f"{plot_dir}/frame_{i:0>5}.png")
+        print(f'Avg peaks per frame: {mean_peaks:.1f}')
+        print(f'Time to calculate: {end-start:.1f} sec')
 
     return peak_dict
+
+
+def overlay_peaks(config):
+    working_dir = config["working_dir"]
+    try:
+        # Load up the image files into a 3D numpy array
+        files = sorted(Path(f"{working_dir}/clean_images").iterdir())
+        img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
+
+        # Apply the substrate mask to the images
+        substrate_mask = np.load(f"{working_dir}/substrate/substrate_mask.npy")
+        substrate_mask = np.repeat(substrate_mask, img_stack.shape[0], axis=0)
+        img_stack = np.ma.array(img_stack, mask=substrate_mask)
+
+        # Load up the peak dictionary
+        peak_dict = load_peaks(config)
+    except FileNotFoundError:
+        print("Could not overlay peaks! Make sure all the peak-finding routines have been run first.")
+        return
+    if config['show_plots']:
+        print()
+        print("Overlaying peaks. Be warned, this is a very slow process...")
+        plot_dir = Path(f"{config['working_dir']}/peaks/overlays")
+        if plot_dir.exists():
+            for p in plot_dir.iterdir():
+                p.unlink()
+        else:
+            plot_dir.mkdir()
+        plt.figure(tight_layout=True, figsize=(10, 5), dpi=150)
+        for i, frame in enumerate(pbar(img_stack)):
+            plt.cla()
+            c = np.array(peak_dict[f'frame_{i:05}']['coords']).T
+            if not len(c):
+                continue
+            plt.imshow(frame, vmax=np.std(img_stack)*config["pkid_sample_threshold"])
+            plt.scatter(c[0], c[1], edgecolor='red', facecolor='None', s=160)
+            plt.savefig(f"{plot_dir}/frame_{i:0>5}.png")
 
 
 def record_positions(config, peak_dict):
