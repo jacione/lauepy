@@ -50,6 +50,7 @@ The following sections describe the parameters on each tab of the application. A
 | Sample        | sample      | Chemical formula for the sample material (see above).                                                                                                                                                  |
 | Show plots    | show_plots  | If true, produce and save plots at various stages of analysis                                                                                                                                          |
 | Verbose       | verbose     | If true, print verbose output while running                                                                                                                                                            |
+
 The "General" tab defines the experiment. Editing any of the first four parameters (and saving) will prompt LauePy to create a new working directory containing your `config.yml` file. The working directory is defined based on the conventions used at APS beamline 34-ID-C, as well as on the parameters provided by the user:
 ```
 /home/beams/CXDUSER/{beamline}-work/{year}/{exp_id}/Analysis/lauepy_output/scan_{scan}{alt_id}
