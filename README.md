@@ -32,11 +32,22 @@ The easiest way to use LauePy is by running
 ```
 python lauepy/src/lauepy_scripts/gui.py
 ```
-Each tab on the application window has a list of parameters which are linked to a configuration file. When the app is first opened, it loads an example configuration from `lauepy/config_example/config.yml`. Whenever any of the parameters is edited, the buttons to run the software are disabled until you either save or revert your changes.
+Each tab on the application window has a list of parameters which are linked to a configuration file. When the app is first opened, it loads an example configuration from `lauepy/config_example/config.yml`. Changes made to the configuration are automatically saved when any command is run.
 
-The following sections describe the parameters on each tab of the application. Additional descriptions can be found in the application by hovering the mouse over the parameter name.
+The following sections describe each tab in the application. They also include descriptions of each editable parameter, along with their corresponding name in the `config.yml` file.
 
 ### General Parameters
+The "General" tab defines the experiment. Editing any of the first four parameters (and saving) will prompt LauePy to create a new working directory containing your `config.yml` file. The working directory, data, and spec file are located based on the conventions used at APS beamline 34-ID-C, as well as on the parameters provided by the user:
+```
+Working directory:
+/home/beams/CXDUSER/{beamline}-work/{year}/{exp_id}/Analysis/lauepy_output/scan_{scan}{alt_id}
+Data directory:
+/home/beams/CXDUSER/{beamline}-data/{year}/{exp_id}/AD34idcLaue_{exp_id}{spec_seq}/{exp_id}{spec_seq}_S{scan:04}
+SPEC file:
+/home/beams/CXDUSER/{beamline}-data/{year}/{exp_id}/{exp_id}{spec_seq}.spec
+```
+From this tab, the user can run the full set of Laue analysis routines with a single click, or proceed to the other tabs for a more step-by-step approach.
+
 | Parameter     | Config name | Description                                                                                                                                                                                            |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Scan          | scan        | Scan number in the experiment's SPEC file                                                                                                                                                              |
@@ -51,24 +62,11 @@ The following sections describe the parameters on each tab of the application. A
 | Show plots    | show_plots  | If true, produce and save plots at various stages of analysis                                                                                                                                          |
 | Verbose       | verbose     | If true, print verbose output while running                                                                                                                                                            |
 
-The "General" tab defines the experiment. Editing any of the first four parameters (and saving) will prompt LauePy to create a new working directory containing your `config.yml` file. The working directory is defined based on the conventions used at APS beamline 34-ID-C, as well as on the parameters provided by the user:
-```
-/home/beams/CXDUSER/{beamline}-work/{year}/{exp_id}/Analysis/lauepy_output/scan_{scan}{alt_id}
-```
-Similarly, LauePy constructs paths for the data
-```
-/home/beams/CXDUSER/{beamline}-data/{year}/{exp_id}/AD34idcLaue_{exp_id}{spec_seq}/{exp_id}{spec_seq}_S{scan:04}
-```
-and for the SPEC file
-```
-/home/beams/CXDUSER/{beamline}-data/{year}/{exp_id}/{exp_id}{spec_seq}.spec
-```
-
 
 ### Image prep tab
 
 The image prep routine makes it easier to find Laue peaks. It first extracts a substrate-only image by taking a pixel-wise quantile of the image stack. This keeps only those peaks which persist through the entire image stack. All images (substrate-only included) are then passed through several filters:
-1. A selective median filter replaces "dead" and "hot" pixels with more locally appropriate values. This filter is not modifiable from the application.
+1. A selective median filter replaces "dead" and "hot" pixels with more locally appropriate values. This filter is not modifiable.
 2. A Gaussian filter smooths out pixel-to-pixel noise. The rolling-ball (RB) method for background subtraction (used next) is highly sensitive to this type of noise. If not removed, it will often cause the RB filter to leave much of the original background, as well as many circular artifacts.
 3. A series of rolling-ball filters remove large-scale background features, isolating the Laue peaks as bright points on a dark background.
 
@@ -76,7 +74,7 @@ The image prep routine makes it easier to find Laue peaks. It first extracts a s
 |--------------------|----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Quantile filter    | prep_substrate_quantile                      | Determines the pixel-wise quantile to use when generating a substrate-only image. Recommended value: 0.5                                                                                                                  |
 | Gaussian sigma     | prep_substrate_sigma <br/> prep_sample_sigma | Width used in the Gaussian pre-filter. Generally, a value below 0.5 will reduce the effectiveness of the rolling-ball filter, while a value above 1.0 will reduce the visibility of dimmer peaks. Recommended value: 0.75 |
-| Rolling ball radii | prep_substrate_radii <br/> prep_sample_radii | Radii used for iterative rolling-ball background subtraction. Must be given in [square brackets]. Recommended value: [30, 10, 3]                                                                                          |
+| Rolling ball radii | prep_substrate_radii <br/> prep_sample_radii | Radii used for iterative rolling-ball background subtraction. Must be given in [square brackets]. Recommended value: [45, 15, 5]                                                                                          |
 
 ### Peak finding tab
 
@@ -93,13 +91,13 @@ This tab deals with the actual Laue analysis. At the heart of this analysis is a
 
 Once the Laue diffraction patterns have been indexed, patterns that appear over multiple frames are grouped into "grains". For each grain, the frames' corresponding beam positions are averaged, weighted with the number of grain-specific peaks that appear in that frame, to determine the most likely position of the grain itself. The grain orientations are also compared to determine which pairs of grains are likely to be twin-related.
 
-| Parameter       | Config name                                        | Description                                                                         |
-|-----------------|----------------------------------------------------|-------------------------------------------------------------------------------------|
-| Misorientation  | laue_substrate_mis_err<br/>laue_sample_mis_err     | Maximum misorientation for two Laue diffraction patterns to be considered the same. |
-| Error tolerance | laue_substrate_tolerance<br/>laue_sample_tolerance | Maximum angular error (peak-wise average) for indexed Laue patterns.                |
-| Grain tolerance | grain_tolerance                                    | Maximum misorientation for two Laue diffraction patterns to be considered the same. |
-| Grain threshold | grain_threshold                                    | I don't know that this actually does anything...                                    |
-| Twin tolerance  | twin_tolerance                                     | Maximum crystal misorientation when determining whether two grains are twins        |
+| Parameter       | Config name                                        | Description                                                                                                                               |
+|-----------------|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| Misorientation  | laue_substrate_mis_err<br/>laue_sample_mis_err     | Maximum misorientation for two Laue diffraction patterns to be considered the same.                                                       |
+| Error tolerance | laue_substrate_tolerance<br/>laue_sample_tolerance | Maximum angular error (peak-wise average) for indexed Laue patterns.                                                                      |
+| Grain tolerance | grain_tolerance                                    | Maximum misorientation for two Laue diffraction patterns to be considered the same.                                                       |
+| Grain threshold | grain_threshold                                    | Maximum number of frames that a grain can appear in, used to filter out incorrectly indexed substrate peaks that didn't get filtered out. |
+| Twin tolerance  | twin_tolerance                                     | Maximum crystal misorientation when determining whether two grains are twins                                                              |
 
 ### Output
 After everything has run, the working directory (defined above) will contain the following:
