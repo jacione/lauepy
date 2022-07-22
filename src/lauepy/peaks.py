@@ -56,7 +56,7 @@ def find_substrate_peaks(config, peak_dict):
         print('### Indexed substrate peaks ###')
         print(f'Min peak distance: {min_dist} pixels')
         print(f'Rel. peak threshold: {config["pkid_substrate_threshold"]}')
-        print(f'Abs. peak threshold: {threshold:0.3}')
+        print(f'Abs. peak threshold: {threshold:.3f}')
 
     # Find the peaks using skimage.feature.peak_local_max
     peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold, exclude_border=10)
@@ -86,7 +86,7 @@ def find_substrate_peaks(config, peak_dict):
 
     if config['verbose']:
         print(f'Number of peaks found: {peak_coords.shape[0]}')
-        print(f'Time to calculate: {end-start: 0.3} sec')
+        print(f'Time to calculate: {end-start:.3f} sec')
 
     if config['show_plots']:
         plt.figure()
@@ -118,8 +118,8 @@ def find_sample_peaks(config, peak_dict):
         print('### Indexed sample peaks ###')
         print(f'Min peak distance: {min_dist} pixels')
         print(f'Threshold rel: {config["pkid_sample_threshold"]}')
-        print(f'Threshold mean: {np.mean(threshold):0.3}')
-        print(f'Threshold stdv: {np.std(threshold):0.3}')
+        print(f'Threshold mean: {np.mean(threshold):.3f}')
+        print(f'Threshold stdv: {np.std(threshold):.3f}')
 
     # Load the mask from the substrate
     try:
@@ -151,8 +151,8 @@ def find_sample_peaks(config, peak_dict):
 
     if config['verbose']:
         print(f'Number of peaks found: {total_peaks}')
-        print(f'Avg peaks per frame: {mean_peaks}')
-        print(f'Time to calculate: {end-start: 0.3} sec')
+        print(f'Avg peaks per frame: {mean_peaks:.3f}')
+        print(f'Time to calculate: {end-start:.3f} sec')
 
     # if config['show_plots']:
     #     print()
