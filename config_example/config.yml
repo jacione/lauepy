@@ -10,6 +10,7 @@ beamline: 34idc
 ### General parameters
 # Leave calibration blank to select a file manually
 calibration: dummy_file.json
+#axes: ["Lab_X", "Lab_Z"]
 substrate: SrTiO3
 sample: Au
 show_plots: 1
