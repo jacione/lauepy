@@ -1,3 +1,4 @@
+import time
 import tkinter as tk
 from tkinter import ttk, filedialog
 from pathlib import Path
@@ -243,6 +244,7 @@ class LaueApp:
     # These are the commands that actually run the code.
     # Every method below this comment MUST start with self.save_config()
     def run_all(self):
+        clock = time.perf_counter()
         if self.save_config():
             # Load the config file
             cfg = ut.read_config(self.conf_path)
@@ -270,6 +272,8 @@ class LaueApp:
             if twins.find_possible_twins(cfg):
                 twins.find_twins(cfg)
                 twins.cleanup_directory()
+        clock = time.perf_counter() - clock
+        print(f"\n\nTotal runtime: {int(clock//60)} min, {int(clock%60)} sec")
 
     def run_prep(self):
         if self.save_config():
@@ -387,10 +391,10 @@ class CreateToolTip(object):
 
     def hidetip(self):
         tw = self.tw
-        self.tw= None
+        self.tw = None
         if tw:
             tw.destroy()
 
 
 if __name__ == '__main__':
-    LaueApp("/home/beams/CXDUSER/34idc-work/2022/LauePUP422/Analysis/lauepy_output/scan_0939/config.yml")
+    LaueApp("/home/beams/CXDUSER/34idc-work/2022/LauePUP422/Analysis/lauepy_output/scan_0261/config.yml")
