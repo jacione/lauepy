@@ -120,20 +120,26 @@ def print_grains(grains, config):
 
 def map_grains(config):
     working_dir = config["working_dir"]
-    with open(f'{working_dir}/peaks/peaks.json', 'r') as f:
-        phi = json.load(f)["info"]["angles"][0]
+
+    # Load and select the grains to show
     with open(f'{working_dir}/grains/grains.json', 'r') as f:
         grains = {
             grain[6:]: g["COM"]
             for grain, g in json.load(f).items()
             if (1 < len(g['Frames']) < config["grain_threshold"] or g['Avg_Peaks'] > 3.01) and grain != "substrate"
         }
-
-    phi = np.abs(np.deg2rad(90-phi))
-
     coords = np.array([c for c in grains.values()])
-    coords[:, 1] *= np.tan(phi)
 
+    # Transform the labx/labz coordinates into the sample frame of reference (top-down, beam travelling up)
+    with open(f'{working_dir}/peaks/peaks.json', 'r') as f:
+        phi, chi, theta = json.load(f)["info"]["angles"]
+    alpha = np.abs(np.deg2rad(phi-90))
+    beta = np.abs(np.deg2rad(chi-90))
+    theta = np.abs(np.deg2rad(theta))
+    grazing = np.pi/2 + alpha*np.cos(theta) + beta*np.sin(theta)
+    coords[:, 1] *= np.tan(grazing)
+
+    # Scatterplot the grain positions
     plt.figure()
     plt.xlabel('microns')
     plt.ylabel('microns')
@@ -143,4 +149,5 @@ def map_grains(config):
     for num, c in zip(grains, coords):
         ts.append(plt.text(*c, num, size=15))
     adjust_text(ts, x=coords[:, 0], y=coords[:, 1], force_points=0.2)
+    plt.savefig(f"{working_dir}/grains/scatterplot.png", dpi=300)
     plt.show()
