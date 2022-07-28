@@ -133,7 +133,7 @@ def map_grains(config):
     # Transform the labx/labz coordinates into the sample frame of reference (top-down, beam travelling up)
     with open(f'{working_dir}/peaks/peaks.json', 'r') as f:
         phi, chi, theta = json.load(f)["info"]["angles"]
-    alpha = np.abs(np.deg2rad(phi-90))
+    alpha = np.abs(np.deg2rad(phi))
     beta = np.abs(np.deg2rad(chi-90))
     theta = np.abs(np.deg2rad(theta))
     grazing = np.pi/2 + alpha*np.cos(theta) + beta*np.sin(theta)
