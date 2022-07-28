@@ -145,7 +145,8 @@ class LaueApp:
                 self.tabs["General"], variable=val, onvalue="True", offvalue="False", text=PARAMS[key]
             ).grid(column=i, row=line, pady=4)
         self.button_section(self.tabs["General"], line+1,
-                            {"Load configuration": self.load_config,
+                            {"Save configuration": self.save_config,
+                             "Load configuration": self.load_config,
                              "Revert changes": self.revert_config,
                              "Run ALL routines": self.run_all})
 
@@ -200,7 +201,7 @@ class LaueApp:
 
     def load_config(self, conf_path=None):
         if conf_path is None:
-            conf_path = filedialog.askopenfilename()
+            conf_path = filedialog.askopenfilename(initialdir=Path(self.conf_path).parent)
         self.conf_path = conf_path
         with open(conf_path, 'r') as f:
             config = yaml.safe_load(f)
@@ -244,6 +245,7 @@ class LaueApp:
     # These are the commands that actually run the code.
     # Every method below this comment MUST start with self.save_config()
     def run_all(self):
+        print("\n\n#### Beginning Laue Analysis ####")
         clock = time.perf_counter()
         if self.save_config():
             # Load the config file
@@ -273,7 +275,7 @@ class LaueApp:
                 twins.find_twins(cfg)
                 twins.cleanup_directory()
         clock = time.perf_counter() - clock
-        print(f"\n\nTotal runtime: {int(clock//60)} min, {int(clock%60)} sec")
+        print(f"\nTotal runtime: {int(clock//60)} min, {int(clock%60)} sec")
 
     def run_prep(self):
         if self.save_config():
