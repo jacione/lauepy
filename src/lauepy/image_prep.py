@@ -71,11 +71,6 @@ def cleanup_images(config):
     img_stack = cp.array([tifffile.imread(f'{f}') for f in files], dtype='i')
     # img_stack = img_stack[163:166]
 
-    def showit():
-        plt.figure()
-        plt.imshow(img_stack[165].get(), vmax=cp.quantile(img_stack[165], 0.999))
-        plt.show()
-
     t0 = time.perf_counter()
 
     print('Removing bad pixels...')
@@ -97,8 +92,6 @@ def cleanup_images(config):
     t1 = time.perf_counter()
     if config['verbose']:
         print(f'Total time: {t1-t0}')
-
-    showit()
 
     return
 

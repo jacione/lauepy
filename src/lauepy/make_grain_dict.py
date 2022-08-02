@@ -78,10 +78,10 @@ def make_grain_dict(config):
         grains[grain]['COM'] = np.average(pos, axis=0, weights=np.array(grains[grain]['Num_Peaks'])).tolist()
 
     num_grains = len([key for key in grains.keys() if key.startswith("grain")])
-    num_frames = [len(grains[f"grain_{num}"]["Frames"]) for num in range(1, num_grains+1)]
+    num_frames = [len(grains[f"grain_{num}"]["Frames"]) for num in range(1, num_grains + 1)]
     sorted_grains = {key: val for key, val in grains.items() if not key.startswith("grain")}
     for i, j in enumerate(np.flip(np.argsort(num_frames))):
-        sorted_grains[f"grain_{i}"] = grains[f"grain_{j+1}"]
+        sorted_grains[f"grain_{i}"] = grains[f"grain_{j + 1}"]
 
     with open(f'{working_dir}/grains/grains.json', 'w') as json_file:
         json.dump(sorted_grains, json_file)
@@ -99,9 +99,7 @@ def make_grain_dict(config):
         json.dump(pattern_dict, json_file)
     if config['verbose']:
         print_grains(sorted_grains, config)
-    if config['show_plots']:
-        map_grains(config)
-        # map_frames(config)
+    map_grains(config)
     return
 
 
@@ -111,7 +109,7 @@ def print_grains(grains, config):
     for grain in grains:
         g = grains[grain]
         num_frames = len(g['Frames'])
-        if (num_frames <= 1 and g['Avg_Peaks'] <= 3.01) or num_frames > config["grain_threshold"]:
+        if num_frames > config["grain_threshold"]:
             continue
         hkl_in = [round(x) for x in g['Spec_Orientation'][0]]
         hkl_out = [round(x) for x in g['Spec_Orientation'][1]]
@@ -133,7 +131,9 @@ def map_grains(config):
         grains = {
             grain[6:]: g["COM"]
             for grain, g in json.load(f).items()
-            if (1 < len(g['Frames']) < config["grain_threshold"] or g['Avg_Peaks'] > 3.01) and grain != "substrate"
+            if (1 < len(g['Frames']) or g['Avg_Peaks'] > 3.01)
+               and len(g["Frames"]) < config["grain_threshold"]
+               and grain != "substrate"
         }
     coords = np.array([c for c in grains.values()])
 
@@ -141,9 +141,9 @@ def map_grains(config):
     with open(f'{working_dir}/peaks/peaks.json', 'r') as f:
         phi, chi, theta = json.load(f)["info"]["angles"]
     alpha = np.abs(np.deg2rad(phi))
-    beta = np.abs(np.deg2rad(chi-90))
+    beta = np.abs(np.deg2rad(chi - 90))
     theta = np.abs(np.deg2rad(theta))
-    grazing = np.pi/2 + alpha*np.cos(theta) + beta*np.sin(theta)
+    grazing = np.pi / 2 + alpha * np.cos(theta) + beta * np.sin(theta)
     coords[:, 1] *= np.tan(grazing)
 
     # Scatterplot the COM grain positions
@@ -155,48 +155,7 @@ def map_grains(config):
     ts = []
     for num, c in zip(grains, coords):
         ts.append(plt.text(*c, num, size=15))
-    adjust_text(ts, x=coords[:, 0], y=coords[:, 1], force_points=0.2)
+    adjust_text(ts, x=coords[:, 0], y=coords[:, 1], force_points=0.25)
     plt.savefig(f"{working_dir}/grains/scatterplot.png", dpi=300)
-    plt.show()
-
-
-def map_frames(config):
-    working_dir = config["working_dir"]
-
-    # Load and select the grains to show
-    with open(f'{working_dir}/grains/grains.json', 'r') as f:
-        grains = json.load(f)
-
-    # Transform the labx/labz coordinates into the sample frame of reference (top-down, beam travelling up)
-    with open(f'{working_dir}/peaks/peaks.json', 'r') as f:
-        phi, chi, theta = json.load(f)["info"]["angles"]
-    alpha = np.abs(np.deg2rad(phi))
-    beta = np.abs(np.deg2rad(chi - 90))
-    theta = np.abs(np.deg2rad(theta))
-    grazing = np.pi / 2 + alpha * np.cos(theta) + beta * np.sin(theta)
-
-    c = []
-    for data in grains.values():
-        c += data["Positions"]
-    min_vals = np.min(c, axis=0)
-    max_vals = np.max(c, axis=0)
-    xlims = [min_vals[0], max_vals[0]]
-    ylims = [np.tan(grazing)*min_vals[1], np.tan(grazing)*max_vals[1]]
-
-    for grain, data in grains.items():
-        if not grain.startswith("grain"):
-            continue
-        coords = np.array(data["Positions"]).T
-        coords[1] *= np.tan(grazing)
-
-        # Scatterplot the frame positions for every frame with that grain
-        plt.figure()
-        plt.title(grain)
-        plt.xlabel('microns')
-        plt.ylabel('microns')
-        plt.xlim(xlims)
-        plt.ylim(ylims)
-        plt.gca().set_aspect('equal')
-        plt.scatter(*coords, c='b')
-        # plt.savefig(f"{working_dir}/grains/scatterplot.png", dpi=300)
+    if config["show_plots"]:
         plt.show()
