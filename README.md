@@ -4,12 +4,21 @@ LauePy is a python-based code library that analyzes Laue diffraction patterns co
 
 ## Installation & setup
 
+### APS beamline 34-ID-C
+If you're using LauePy, there's a decent chance you're doing so at APS beamline 34-ID-C. In this case, all of the dependencies should already be installed on Sayre, and you just need to run the following commands for the initial setup:
+```
+ssh -Y cxduser@sayre
+cd 34idc-work/2022/lauepy_dev
+conda activate lauepy
+```
+Once this is done, you can (and should) skip the rest of this section.
+
 ### Requirements
 LauePy makes certain assumptions about the setup, process, and data management of your experiment. These assumptions are based on APS beamline 34-ID-C, where the code was developed.
 
 Current requirements:
 * Linux operating system (for the compiled Euler binary)
-* Python 3.7 (other versions may work but haven't been tested)
+* Python 3.7 (other versions probably work but haven't been tested)
 * NVidia graphics card (for CUDA-accelerated calculation)
 * The experiment must be managed in [SPEC](https://certif.com/content/spec/).
 
@@ -26,12 +35,12 @@ pip install .
 
 ## Usage
 
-> Note: If you're using LauePy, there's a decent chance you're doing so at APS beamline 34-ID-C. In this case, it is recommended to run LauePy on Sayre via SSH.
-
 The easiest way to use LauePy is by running
 ```
-python path/to/lauepy/src/lauepy_scripts/gui.py
+python src/lauepy_scripts/gui.py
 ```
+> Note: The path must be relative to the toplevel LauePy directory for the submodules to import properly.
+
 Each tab on the application window has a list of parameters which are linked to a configuration file. When the app is first opened, it loads an example configuration from `lauepy/config_example/config.yml`. Changes made to the configuration are automatically saved when any command is run.
 
 The following sections describe each tab in the application. They also include descriptions of each editable parameter, along with their corresponding name in the `config.yml` file.
