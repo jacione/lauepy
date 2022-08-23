@@ -30,7 +30,7 @@ pip install .
 
 The easiest way to use LauePy is by running
 ```
-python lauepy/src/lauepy_scripts/gui.py
+python path/to/lauepy/src/lauepy_scripts/gui.py
 ```
 Each tab on the application window has a list of parameters which are linked to a configuration file. When the app is first opened, it loads an example configuration from `lauepy/config_example/config.yml`. Changes made to the configuration are automatically saved when any command is run.
 
