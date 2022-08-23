@@ -140,8 +140,8 @@ def find_sample_peaks(peak_dict, working_dir=None, pkid_sample_threshold=None, p
     end = time.perf_counter()
 
     # Calculate the total number of peaks and average peaks per frame.
-    total_peaks = np.sum([peak_dict[frame]["num_peaks"] for frame in peak_dict.keys()])
-    mean_peaks = np.mean([peak_dict[frame]["num_peaks"] for frame in peak_dict.keys()])
+    total_peaks = np.sum([peak_dict[frame]["num_peaks"] for frame in peak_dict.keys() if frame.startswith("frame")])
+    mean_peaks = np.mean([peak_dict[frame]["num_peaks"] for frame in peak_dict.keys() if frame.startswith("frame")])
 
     print(f'Number of peaks found: {total_peaks}')
     print(f'Avg peaks per frame: {mean_peaks:.1f}')
