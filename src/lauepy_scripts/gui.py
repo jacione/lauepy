@@ -174,7 +174,8 @@ class LaueApp:
                             {"Index Laue patterns": self.run_laue_index,
                              "Generate grain macros": self.run_laue_grains,
                              "Find twin-related grains": self.run_laue_twins,
-                             "Run all of the above": self.run_laue})
+                             "Run all of the above": self.run_laue,
+                             "Grain clusters": self.run_laue_experimental})
 
         for name, frame in self.tabs.items():
             self.input_nb.add(frame, text=name)
@@ -337,6 +338,11 @@ class LaueApp:
             cfg = ut.read_config(self.conf_path)
             grain.make_grain_dict(cfg)
 
+    def run_laue_experimental(self):
+        if self.save_config():
+            cfg = ut.read_config(self.conf_path)
+            grain.cluster_grains(cfg)
+
     def run_laue_twins(self):
         if self.save_config():
             cfg = ut.read_config(self.conf_path)
@@ -399,4 +405,4 @@ class CreateToolTip(object):
 
 
 if __name__ == '__main__':
-    LaueApp("/home/beams/CXDUSER/34idc-work/2022/LauePUP422/Analysis/lauepy_output/scan_0261/config.yml")
+    LaueApp("/home/beams/CXDUSER/34idc-work/2022/LauePUP422/Analysis/lauepy_output/scan_0262/config.yml")

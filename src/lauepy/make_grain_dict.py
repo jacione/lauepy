@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from adjustText import adjust_text
 from sklearn import cluster
 
-import src.lauepy.overlay_peaks as op
 from src.lauepy.disorientation import calc_disorient, rmat_2_quat
 from src.lauepy.write_macro import grain_to_macro
 
@@ -24,13 +23,15 @@ def cluster_grains(config):
 
     patterns = [p for p in pattern_dict.values()]
 
+    print(rmat_2_quat([p["Rot_mat"] for p in patterns]))
+
     orients = np.array([p["Spec_Orientation"] for p in patterns])
     orients = np.sort(np.abs(orients), axis=-1)
     orients /= orients[:, :, -1].reshape((*orients[:, :, -1].shape, 1))
-    orients = orients.reshape(-1, 6)[:, :4]  # The last element of each normalized hkl vector is constrained to unity.
+    orients = orients.reshape(-1, 6)  # The last element of each normalized hkl vector is constrained to unity.
 
-    # clustering = cluster.DBSCAN(eps=0.0005, min_samples=1, metric="cosine")
-    clustering = cluster.AgglomerativeClustering(n_clusters=None, distance_threshold=0.02, linkage='ward')
+    clustering = cluster.DBSCAN(eps=0.0005, min_samples=1, metric="cosine")
+    # clustering = cluster.AgglomerativeClustering(n_clusters=None, distance_threshold=0.02, linkage='ward')
     clustering.fit(orients)
     labels = clustering.labels_
     print(f"Found {len(np.unique(labels))} grains")
@@ -153,8 +154,7 @@ def make_grain_dict(config):
     grain_to_macro(config)
     with open(f'{working_dir}/peaks/patterns.json', 'w') as json_file:
         json.dump(pattern_dict, json_file)
-    if config['verbose']:
-        print_grains(sorted_grains, config)
+    print_grains(sorted_grains, config)
     map_grains(config)
     return
 
@@ -180,22 +180,24 @@ def print_grains(grains, config):
 
 
 def print_clusters(grains, config):
-    print('################### GRAIN DICT #######################')
-    print(f'{"Grain":>10}{"RMS":>8}{"Peaks":>7}{"Frames":>8}   {"Position":<16}{"HKL-in":<16}{"HKL-out":<16}')
+    s = '################### GRAINS #######################\n'
+    s += f'{"Grain":>10}{"RMS":>8}{"Peaks":>7}{"Frames":>8}   {"Position":<16}{"HKL-in":<16}{"HKL-out":<16}\n'
     for grain in grains:
         g = grains[grain]
         # if g['num_frames'] > config["grain_threshold"]:
         #     continue
         hkl_in = [round(x) for x in g['orientation'][0]]
         hkl_out = [round(x) for x in g['orientation'][1]]
-        print(f"{grain:>10}"
-              f"{g['rms_error']:8.3f}"
-              f"{g['num_peaks']:7.1f}"
-              f"{g['num_frames']:>8}   "
-              f"[{g['position'][0]:6.2f},{g['position'][1]:6.2f}] "
-              f"[{hkl_in[0]:>3}, {hkl_in[1]:>3}, {hkl_in[2]:>3}] "
-              f"[{hkl_out[0]:>3}, {hkl_out[1]:>3}, {hkl_out[2]:>3}]"
-              )
+        s += f"{grain:>10}"
+        s += f"{g['rms_error']:8.3f}"
+        s += f"{g['num_peaks']:7.1f}"
+        s += f"{g['num_frames']:>8}   "
+        s += f"[{g['position'][0]:6.2f},{g['position'][1]:6.2f}] "
+        s += f"[{hkl_in[0]:>3}, {hkl_in[1]:>3}, {hkl_in[2]:>3}] "
+        s += f"[{hkl_out[0]:>3}, {hkl_out[1]:>3}, {hkl_out[2]:>3}]\n"
+    (Path(config['working_dir'])/'grains/grain_output.txt').write_text(s)
+    if config['verbose']:
+        print(s)
 
 
 def map_clusters(grains, config):
