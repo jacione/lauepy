@@ -25,7 +25,7 @@ def find_possible_twins(config):
     inds = np.array([comb[g] for g in good_ind])
     if config['verbose']:
         print("Possible twins:")
-        print(inds)
+        print(inds-1)
         print()
     with open(Path(config['working_dir']) / "twins/possible_twins.txt", 'w') as file:
         for i in inds:
