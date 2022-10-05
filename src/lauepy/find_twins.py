@@ -40,7 +40,6 @@ def find_twins(config):
     keys = list(grains)
 
     inds = np.array(np.loadtxt(f"{config['working_dir']}/twins/possible_twins.txt", dtype=np.int32))
-    print(inds.shape)
     if np.shape(inds) == (2,):
         inds = [inds]
     e1 = np.array(
@@ -48,7 +47,6 @@ def find_twins(config):
     e2 = np.array(
         [Rotation.from_matrix(np.array(grains[keys[i[1]]]['Rot_mat']).T).as_euler('ZXZ', degrees=True) for i in inds])
     es = np.hstack([e1, e2])
-    print(es.shape)
     id_pairs = [(keys[i[0]], keys[i[1]]) for i in inds]
     angle_path = f"{config['working_dir']}/twins/angle_list.txt"
     with open(angle_path, 'w') as file:
