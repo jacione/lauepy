@@ -104,8 +104,8 @@ def make_grain_dict(config):
 
 
 def print_grains(grains, config):
-    print('################### GRAIN DICT #######################')
-    print(f'{"Grain":>10}{"RMS":>8}{"Peaks":>7}{"Frames":>8}   {"Position":<16}{"HKL-in":<16}{"HKL-out":<16}')
+    s = '################### GRAIN DICT #######################'
+    s += f'{"Grain":>10}{"RMS":>8}{"Peaks":>7}{"Frames":>8}   {"Position":<16}{"HKL-in":<16}{"HKL-out":<16}'
     for grain in grains:
         g = grains[grain]
         num_frames = len(g['Frames'])
@@ -113,14 +113,16 @@ def print_grains(grains, config):
             continue
         hkl_in = [round(x) for x in g['Spec_Orientation'][0]]
         hkl_out = [round(x) for x in g['Spec_Orientation'][1]]
-        print(f"{grain:>10}"
-              f"{g['Avg_RMS']:>8}"
-              f"{g['Avg_Peaks']:>7}"
-              f"{num_frames:>8}   "
-              f"[{np.around(g['COM'][0], 2):>6},{np.around(g['COM'][1], 2):>6}] "
-              f"[{hkl_in[0]:>3}, {hkl_in[1]:>3}, {hkl_in[2]:>3}] "
-              f"[{hkl_out[0]:>3}, {hkl_out[1]:>3}, {hkl_out[2]:>3}]"
-              )
+        s += f"{grain:>10}"
+        s += f"{g['Avg_RMS']:>8}"
+        s += f"{g['Avg_Peaks']:>7}"
+        s += f"{num_frames:>8}   "
+        s += f"[{np.around(g['COM'][0], 2):>6},{np.around(g['COM'][1], 2):>6}] "
+        s += f"[{hkl_in[0]:>3}, {hkl_in[1]:>3}, {hkl_in[2]:>3}] "
+        s += f"[{hkl_out[0]:>3}, {hkl_out[1]:>3}, {hkl_out[2]:>3}]"
+    (Path(config['working_dir'])/'grains/grain_output.txt').write_text(s)
+    if config['verbose']:
+        print(s)
 
 
 def map_grains(config):
