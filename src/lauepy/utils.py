@@ -22,6 +22,7 @@ SPEC_DICT = {
     "laby": 'Lab_Y',
     "labz":  'Lab_Z'
 }
+LAUEPY_DIR = Path(__file__).parents[1]
 
 
 def new_analysis_cli(entries=None):
@@ -117,7 +118,6 @@ def read_config(yml_file):
     cfg['data_dir'] = f"/home/beams/CXDUSER/{beamline}-data/{year}/{exp_id}/AD34idcLaue_{exp_id}{spec_seq}" \
                       f"/{exp_id}{spec_seq}_S{scan:04}"
     cfg['spec_file'] = f"/home/beams/CXDUSER/{beamline}-data/{year}/{exp_id}/{exp_id}{spec_seq}.spec"
-    cfg['lauepy_dir'] = f'{Path(__file__).parents[1]}'
 
     # Make sure the data and spec files can be found
     if not Path(cfg['working_dir']).parents[2].exists():

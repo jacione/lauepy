@@ -8,6 +8,7 @@ from adjustText import adjust_text
 import src.lauepy.overlay_peaks as op
 from src.lauepy.disorientation import calc_disorient, rmat_2_quat
 from src.lauepy.write_macro import grain_to_macro
+from src.lauepy.utils import LAUEPY_DIR
 
 
 def make_grain_dict(config):
@@ -85,20 +86,24 @@ def make_grain_dict(config):
 
     with open(f'{working_dir}/grains/grains.json', 'w') as json_file:
         json.dump(sorted_grains, json_file)
+    with open(f'{LAUEPY_DIR}/crystals/{config["substrate"]}.json') as f:
+        substrate_params = json.load(f)
+    with open(f'{LAUEPY_DIR}/crystals/{config["sample"]}.json') as f:
+        sample_params = json.load(f)
 
     for key, grain in grains.items():
         if key == 'substrate':
+            grain_to_macro(f"{working_dir}/macros/{key}.mac", substrate_params, grain['Spec_Orientation'])
             continue
+        grain_to_macro(f"{working_dir}/macros/{key}.mac", sample_params, grain['Spec_Orientation'])
         for patt in grain['Patts']:
             pattern_dict[patt]['Grain'] = grain
         draw_patts = grain['Patts']
         for pattern in draw_patts:
             op.overlay(config, pattern_dict[pattern], key)
-    grain_to_macro(config)
     with open(f'{working_dir}/peaks/patterns.json', 'w') as json_file:
         json.dump(pattern_dict, json_file)
-    if config['verbose']:
-        print_grains(sorted_grains, config)
+    print_grains(sorted_grains, config)
     map_grains(config)
     return
 

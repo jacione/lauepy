@@ -1,5 +1,3 @@
-import json
-
 
 # inputs
 # filename - can include full pathname
@@ -8,24 +6,13 @@ import json
 # inp - in-place vector
 # outp - out of place vector
 
-def grain_to_macro(config):
-    with open(f'{config["lauepy_dir"]}/crystals/{config["sample"]}.json') as f:
-        sample_params = json.load(f)
-    with open(f'{config["lauepy_dir"]}/crystals/{config["substrate"]}.json') as f:
-        substrate_params = json.load(f)
+def grain_to_macro(save_as, lattice_params, orientation):
 
-    with open(f"{config['working_dir']}/grains/grains.json") as f:
-        grain_dict = json.load(f)
-    for grain in grain_dict:
-        if str(grain) == 'substrate':
-            a, b, c, alpha, beta, gamma = substrate_params['lattice_params']
-        else:
-            a, b, c, alpha, beta, gamma = sample_params['lattice_params']
-        a, b, c = a * 1e10, b * 1e10, c * 1e10
-        inp, outp = grain_dict[grain]['Spec_Orientation']
-        filename = f"{config['working_dir']}/macros/{grain}.mac"
+    a, b, c, alpha, beta, gamma = lattice_params
+    a, b, c = a * 1e10, b * 1e10, c * 1e10
+    inp, outp = orientation
 
-        f = open(filename, "w")
+    with open(save_as, "w") as f:
         f.write("U[\"0\"] = {0:.3f}\n".format(a))  # lattice params
         f.write("U[\"1\"] = {0:.3f}\n".format(b))  # lattice params
         f.write("U[\"2\"] = {0:.3f}\n".format(c))  # lattice params
@@ -53,7 +40,6 @@ def grain_to_macro(config):
         f.write("U[\"28\"] = 0\n")
         f.write("U[\"29\"] = 20\n")
         f.write("calcG\n")
-        f.close()
 
 
 def write_calibration():
