@@ -94,9 +94,7 @@ def cleanup_images(working_dir=None, data_dir=None, prep_sample_sigma=None, prep
     t0 = time.perf_counter()
 
     print('Removing bad pixels...')
-    filt_stack = ndi.median_filter(img_stack, size=[1, 5, 5])
-    img_stack[img_stack < 0] = filt_stack[img_stack < 0]
-    img_stack[img_stack > 10**7] = filt_stack[img_stack < 0]
+    img_stack = remove_bad_pixels(img_stack)
 
     # Subtract the broad features
     print('Subtracting background features...')
@@ -113,6 +111,13 @@ def cleanup_images(working_dir=None, data_dir=None, prep_sample_sigma=None, prep
     print(f'Total time: {t1-t0}')
 
     return
+
+
+def remove_bad_pixels(img_stack):
+    filt_stack = ndi.median_filter(img_stack, size=[1, 5, 5])
+    img_stack[img_stack < 0] = filt_stack[img_stack < 0]
+    img_stack[img_stack > 10**7] = filt_stack[img_stack > 10**7]
+    return img_stack
 
 
 def make_rb_kernels(radii):
