@@ -14,35 +14,47 @@ from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from progressbar import progressbar as pbar
 
 
-def extract_substrate(config):
+def extract_substrate(working_dir=None, data_dir=None, prep_substrate_quantile=None, prep_substrate_sigma=None,
+                      prep_substrate_radii=None, show_plots=None, **kwargs):
     """
     Takes a stack of Laue diffraction images and extracts only the stationary peaks. If the median background has
     the issue of uneven features, we can adopt the cleanup_images method to remove uneven pattern. The rolling-ball
     algorithm estimates the background intensity of a grayscale image in case of uneven exposure.
 
-    :param config: configuration parameters
-    :type config: dict
+    :param working_dir: (str) Where the processed images will be saved
+    :param data_dir: (str) The location of the raw images to be analyzed
+    :param prep_substrate_quantile: (float) Determines the pixel-wise quantile to use when generating a substrate-only
+        image.
+    :param prep_substrate_sigma: (float) Width used in the Gaussian pre-filter. Generally, a value below 0.5 will
+        reduce the effectiveness of the rolling-ball filter, while a value above 1.0 will reduce the visibility of
+        dimmer peaks.
+    :param prep_substrate_radii: (list of floats) Radii used for iterative rolling-ball background subtraction. If
+        length > 1, will be applied in the order given.
+    :param show_plots: (bool) If true, show a plot of before and after processing.
+    :param kwargs: Any additional keyword arguments will be ignored. Required for compatibility with the main LauePy
+        workflow, which is based on configuration dictionaries.
+    :return: None
     """
     print('Extracting substrate-only image...')
-    files = sorted(Path(config['data_dir']).iterdir())
+    files = sorted(Path(data_dir).iterdir())
     img_stack = cp.array([tifffile.imread(f'{f}') for f in files], dtype='i')
 
     # A quantile filter over all frames removes short-lived features (such as Laue peaks!)
     # q=0.5 is a median filter
     # q=0.0 is a minimum filter
     # q=1.0 is a maximum filter
-    raw_img = cp.quantile(img_stack, config['prep_substrate_quantile'], axis=0)
+    raw_img = cp.quantile(img_stack, prep_substrate_quantile, axis=0)
     img = raw_img
     filt_img = ndi.median_filter(img, size=5)
     img[img < cp.quantile(img, 0.1)] = filt_img[img < cp.quantile(img, 0.1)]
     img[img > 10**7] = filt_img[img > 10**7]
 
     # Rolling ball filter removes large-scale features (such as vignette)
-    sigma = config["prep_substrate_sigma"]
-    kernels = make_rb_kernels(config["prep_substrate_radii"])
+    sigma = prep_substrate_sigma
+    kernels = make_rb_kernels(prep_substrate_radii)
     img = remove_background(img, sigma, kernels)
 
-    if config['show_plots']:
+    if show_plots:
         plt.figure(tight_layout=True)
         ax = plt.subplot(211, xticks=[], yticks=[], title='Raw image')
         plt.imshow(raw_img.get(), vmax=cp.quantile(raw_img, 0.999))
@@ -50,26 +62,34 @@ def extract_substrate(config):
         plt.imshow(img.get(), vmax=cp.quantile(img, 0.999))
         plt.show()
     
-    tifffile.imsave(f"{config['working_dir']}/substrate/substrate_peaks.tiff", cp.array(img, dtype='i').get())
+    tifffile.imsave(f"{working_dir}/substrate/substrate_peaks.tiff", cp.array(img, dtype='i').get())
 
     return
 
 
-def cleanup_images(config):
+def cleanup_images(working_dir=None, data_dir=None, prep_sample_sigma=None, prep_sample_radii=None, **kwargs):
     """
-    Takes the image stack and cleans them up so that the Laue peaks are easier to see.
+    Applies a series of filters to all images found in `data_dir`.
+    TODO describe the filters
 
-    :param config: configuration parameters
-    :type config: dict
+    :param working_dir: (str) Where the processed images will be saved
+    :param data_dir: (str) The location of the raw images to be analyzed
+    :param prep_sample_sigma: (float) Width used in the Gaussian pre-filter. Generally, a value below 0.5 will
+        reduce the effectiveness of the rolling-ball filter, while a value above 1.0 will reduce the visibility of
+        dimmer peaks.
+    :param prep_sample_radii: (list of floats) Radii used for iterative rolling-ball background subtraction. If
+        length > 1, will be applied in the order given.
+    :param kwargs: Any additional keyword arguments will be ignored. Required for compatibility with the main LauePy
+        workflow, which is based on configuration dictionaries.
+    :return:
     """
     print('Cleaning up Laue images...')
-    output_dir = f"{config['working_dir']}/clean_images"
+    output_dir = f"{working_dir}/clean_images"
     if not Path(output_dir).exists():
         Path(output_dir).mkdir(parents=True)
 
-    files = sorted(Path(config['data_dir']).iterdir())
+    files = sorted(Path(data_dir).iterdir())
     img_stack = cp.array([tifffile.imread(f'{f}') for f in files], dtype='i')
-    # img_stack = img_stack[163:166]
 
     t0 = time.perf_counter()
 
@@ -80,8 +100,8 @@ def cleanup_images(config):
 
     # Subtract the broad features
     print('Subtracting background features...')
-    sigma = config["prep_sample_sigma"]
-    kernels = make_rb_kernels(config["prep_sample_radii"])
+    sigma = prep_sample_sigma
+    kernels = make_rb_kernels(prep_sample_radii)
     for i, img in enumerate(pbar(img_stack)):
         img_stack[i] = remove_background(img_stack[i], sigma, kernels)
 
@@ -90,8 +110,7 @@ def cleanup_images(config):
         tifffile.imsave(f'{output_dir}/img_{i:05}.tiff', cp.array(img, dtype='i').get())
         
     t1 = time.perf_counter()
-    if config['verbose']:
-        print(f'Total time: {t1-t0}')
+    print(f'Total time: {t1-t0}')
 
     return
 

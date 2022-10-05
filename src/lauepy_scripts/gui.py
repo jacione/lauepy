@@ -252,8 +252,8 @@ class LaueApp:
             cfg = ut.read_config(self.conf_path)
 
             # Image prep
-            prep.extract_substrate(cfg)
-            prep.cleanup_images(cfg)
+            prep.extract_substrate(**cfg)
+            prep.cleanup_images(**cfg)
 
             # Peak finding
             peak_dict = pk.find_substrate_peaks(cfg, {})
@@ -280,18 +280,18 @@ class LaueApp:
     def run_prep(self):
         if self.save_config():
             cfg = ut.read_config(self.conf_path)
-            prep.extract_substrate(cfg)
-            prep.cleanup_images(cfg)
+            prep.extract_substrate(**cfg)
+            prep.cleanup_images(**cfg)
 
     def run_prep_sub(self):
         if self.save_config():
             cfg = ut.read_config(self.conf_path)
-            prep.extract_substrate(cfg)
+            prep.extract_substrate(**cfg)
 
     def run_prep_sam(self):
         if self.save_config():
             cfg = ut.read_config(self.conf_path)
-            prep.cleanup_images(cfg)
+            prep.cleanup_images(**cfg)
 
     def run_peaks(self):
         if self.save_config():
