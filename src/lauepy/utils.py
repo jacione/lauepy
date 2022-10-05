@@ -173,19 +173,20 @@ def save_config(cfg, yml_file):
     return
 
 
-def read_spec_log(config):
+def read_spec_log(spec_file, scan, *axes):
     """
     Reads the positions of a single motor for every frame in a scan.
 
-    :param config: configuration dictionary
-    :type config: dict
+    :param spec_file: (str) spec file location
+    :param scan: (int) scan number to look up in the spec file
     :return: array of shape (N,) where N is the number of frames in the scan
     :rtype: ndarray
     """
     # The (scan - 1) indexing is needed because the spec file starts at scan 1 (not zero)
-    scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
+    scan = spec.SPECFile(spec_file)[scan - 1]
     scan.ReadData()
-    axes = [v for k, v in SPEC_DICT.items() if k in scan.command]
+    if len(axes) == 0:
+        axes = [v for k, v in SPEC_DICT.items() if k in scan.command]
     arr = np.empty((scan.data.shape[0], len(axes)))
 
     for i, ax in enumerate(axes):
@@ -198,22 +199,22 @@ def read_spec_log(config):
     return axes, arr
 
 
-def read_spec_init(config, *keys):
+def read_spec_init(spec_file, scan, *axes):
     """
     Reads the initial position of a single motor for a single scan.
 
     :param config: configuration dictionary
     :type config: dict
-    :param keys: motor name
-    :type keys: str
+    :param axes: motor name
+    :type axes: str
     :return: initial motor position
     :rtype: ndarray
     """
-    scan = spec.SPECFile(config['spec_file'])[config['scan'] - 1]
-    if len(keys) == 1:
-        ret = scan.init_motor_pos[f'INIT_MOPO_{keys[0]}']
+    scan = spec.SPECFile(spec_file)[scan - 1]
+    if len(axes) == 1:
+        ret = scan.init_motor_pos[f'INIT_MOPO_{axes[0]}']
     else:
-        ret = [scan.init_motor_pos[f'INIT_MOPO_{key}'] for key in keys]
+        ret = [scan.init_motor_pos[f'INIT_MOPO_{key}'] for key in axes]
     return np.array(ret)
 
 

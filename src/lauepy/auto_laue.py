@@ -169,7 +169,7 @@ class AutoLaue:
                 q_z = q_z / total_qhat
 
                 frame_data['G_vectors'][i] = (q_x, q_y, q_z)
-        pk.save_peaks(self.config, self.peak_dict)
+        pk.save_peaks(self.peak_dict, self.config)
         return
 
     def write_mat_params(self, gvectors):
@@ -345,7 +345,7 @@ class AutoLaue:
                 self.set_params(substrate=False)
         with open(f"{self.working_dir}/peaks/patterns.json", 'w') as f:
             json.dump(self.pattern_dict, f)
-        pk.save_peaks(self.config, self.peak_dict)
+        pk.save_peaks(self.peak_dict, self.config)
         return
 
     def loss_function_distance(self, xtal_rmat, xy_exp, hkl_labels):

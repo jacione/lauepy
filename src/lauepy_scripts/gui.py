@@ -256,10 +256,10 @@ class LaueApp:
             prep.cleanup_images(**cfg)
 
             # Peak finding
-            peak_dict = pk.find_substrate_peaks(cfg, {})
-            peak_dict = pk.find_sample_peaks(cfg, peak_dict)
-            peak_dict = pk.record_positions(cfg, peak_dict)
-            pk.save_peaks(cfg, peak_dict)
+            peak_dict = pk.find_substrate_peaks({}, cfg)
+            peak_dict = pk.find_sample_peaks(peak_dict, cfg)
+            peak_dict = pk.record_positions(peak_dict, cfg)
+            pk.save_peaks(peak_dict, cfg)
 
             # Laue indexing
             for p in Path(f"{cfg['working_dir']}/grains").iterdir():
@@ -296,25 +296,25 @@ class LaueApp:
     def run_peaks(self):
         if self.save_config():
             cfg = ut.read_config(self.conf_path)
-            peak_dict = pk.find_substrate_peaks(cfg, {})
-            peak_dict = pk.find_sample_peaks(cfg, peak_dict)
-            peak_dict = pk.record_positions(cfg, peak_dict)
-            pk.save_peaks(cfg, peak_dict)
+            peak_dict = pk.find_substrate_peaks({}, **cfg)
+            peak_dict = pk.find_sample_peaks(peak_dict, **cfg)
+            peak_dict = pk.record_positions(peak_dict, **cfg)
+            pk.save_peaks(peak_dict, **cfg)
 
     def run_peaks_sub(self):
         if self.save_config():
             cfg = ut.read_config(self.conf_path)
-            peak_dict = pk.load_peaks(cfg)
-            peak_dict = pk.find_substrate_peaks(cfg, peak_dict)
-            pk.save_peaks(cfg, peak_dict)
+            peak_dict = pk.load_peaks(**cfg)
+            peak_dict = pk.find_substrate_peaks(peak_dict, **cfg)
+            pk.save_peaks(peak_dict, **cfg)
 
     def run_peaks_sam(self):
         if self.save_config():
             cfg = ut.read_config(self.conf_path)
-            peak_dict = pk.load_peaks(cfg)
-            peak_dict = pk.find_sample_peaks(cfg, peak_dict)
-            peak_dict = pk.record_positions(cfg, peak_dict)
-            pk.save_peaks(cfg, peak_dict)
+            peak_dict = pk.load_peaks(**cfg)
+            peak_dict = pk.find_sample_peaks(peak_dict, **cfg)
+            peak_dict = pk.record_positions(peak_dict, **cfg)
+            pk.save_peaks(peak_dict, **cfg)
 
     def run_laue(self):
         if self.save_config():
@@ -350,7 +350,7 @@ class CreateToolTip(object):
     create a tooltip for a given widget
     """
     def __init__(self, widget, text='widget info'):
-        self.waittime = 500     #miliseconds
+        self.waittime = 500     #milliseconds
         self.wraplength = 300   #pixels
         self.widget = widget
         self.text = text
