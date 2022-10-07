@@ -5,16 +5,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from adjustText import adjust_text
 
-import src.lauepy.overlay_peaks as op
+# import src.lauepy.overlay_peaks as op
 from src.lauepy.disorientation import calc_disorient, rmat_2_quat
 from src.lauepy.write_macro import grain_to_macro
 from src.lauepy.utils import LAUEPY_DIR
 
 
-def make_grain_dict(config):
+def make_grain_dict(working_dir=None, substrate=None, sample=None, grain_tolerance=None, grain_threshold=None,
+                    show_plots=True, **kwargs):
     print('Grouping patterns into grains...')
 
-    working_dir = config['working_dir']
     for p in Path(f"{working_dir}/grains").iterdir():
         p.unlink()
     for p in Path(f"{working_dir}/macros").iterdir():
@@ -45,7 +45,7 @@ def make_grain_dict(config):
             grain_rot = [np.array(grains[grain]['Rot_mat']) for grain in grains]
             misorientations = calc_disorient(rmat_2_quat(pat_rot), rmat_2_quat(grain_rot))
             for key, grain in enumerate(grains):
-                if misorientations[key] < config['grain_tolerance']:
+                if misorientations[key] < grain_tolerance:
                     if pattern_dict[patt]['Center_Frame'] not in grains[grain]['Frames']:
                         grains[grain]['Frames'].append(pattern_dict[patt]['Center_Frame'])
                         grains[grain]['Positions'].append(pattern_dict[patt]['Pos'])
@@ -86,10 +86,10 @@ def make_grain_dict(config):
 
     with open(f'{working_dir}/grains/grains.json', 'w') as json_file:
         json.dump(sorted_grains, json_file)
-    with open(f'{LAUEPY_DIR}/crystals/{config["substrate"]}.json') as f:
-        substrate_params = json.load(f)
-    with open(f'{LAUEPY_DIR}/crystals/{config["sample"]}.json') as f:
-        sample_params = json.load(f)
+    with open(f'{LAUEPY_DIR}/crystals/{substrate}.json') as f:
+        substrate_params = json.load(f)["lattice_params"]
+    with open(f'{LAUEPY_DIR}/crystals/{sample}.json') as f:
+        sample_params = json.load(f)["lattice_params"]
 
     for key, grain in grains.items():
         if key == 'substrate':
@@ -98,23 +98,24 @@ def make_grain_dict(config):
         grain_to_macro(f"{working_dir}/macros/{key}.mac", sample_params, grain['Spec_Orientation'])
         for patt in grain['Patts']:
             pattern_dict[patt]['Grain'] = grain
-        draw_patts = grain['Patts']
-        for pattern in draw_patts:
-            op.overlay(config, pattern_dict[pattern], key)
+        # TODO: The next 3 lines don't really serve a purpose and just take up time.
+        # draw_patts = grain['Patts']
+        # for pattern in draw_patts:
+        #     op.overlay(config, pattern_dict[pattern], key)
     with open(f'{working_dir}/peaks/patterns.json', 'w') as json_file:
         json.dump(pattern_dict, json_file)
-    print_grains(sorted_grains, config)
-    map_grains(config)
+    print_grains(sorted_grains, working_dir, grain_threshold)
+    map_grains(working_dir, grain_threshold, show_plots)
     return
 
 
-def print_grains(grains, config):
+def print_grains(grains, working_dir, grain_threshold):
     s = '################### GRAIN DICT #######################'
     s += f'{"Grain":>10}{"RMS":>8}{"Peaks":>7}{"Frames":>8}   {"Position":<16}{"HKL-in":<16}{"HKL-out":<16}'
     for grain in grains:
         g = grains[grain]
         num_frames = len(g['Frames'])
-        if num_frames > config["grain_threshold"]:
+        if num_frames > grain_threshold:
             continue
         hkl_in = [round(x) for x in g['Spec_Orientation'][0]]
         hkl_out = [round(x) for x in g['Spec_Orientation'][1]]
@@ -125,13 +126,12 @@ def print_grains(grains, config):
         s += f"[{np.around(g['COM'][0], 2):>6},{np.around(g['COM'][1], 2):>6}] "
         s += f"[{hkl_in[0]:>3}, {hkl_in[1]:>3}, {hkl_in[2]:>3}] "
         s += f"[{hkl_out[0]:>3}, {hkl_out[1]:>3}, {hkl_out[2]:>3}]"
-    (Path(config['working_dir'])/'grains/grain_output.txt').write_text(s)
-    if config['verbose']:
-        print(s)
+    (Path(working_dir)/'grains/grain_output.txt').write_text(s)
+    print(s)
 
 
-def map_grains(config):
-    working_dir = config["working_dir"]
+def map_grains(working_dir, grain_threshold, show_plots=True):
+    working_dir = working_dir
 
     # Load and select the grains to show
     with open(f'{working_dir}/grains/grains.json', 'r') as f:
@@ -139,7 +139,7 @@ def map_grains(config):
             grain[6:]: g["COM"]
             for grain, g in json.load(f).items()
             if (1 < len(g['Frames']) or g['Avg_Peaks'] > 3.01)
-               and len(g["Frames"]) < config["grain_threshold"]
+               and len(g["Frames"]) < grain_threshold
                and grain != "substrate"
         }
     coords = np.array([c for c in grains.values()])
@@ -164,5 +164,5 @@ def map_grains(config):
         ts.append(plt.text(*c, num, size=15))
     adjust_text(ts, x=coords[:, 0], y=coords[:, 1], force_points=0.25)
     plt.savefig(f"{working_dir}/grains/scatterplot.png", dpi=300)
-    if config["show_plots"]:
+    if show_plots:
         plt.show()

@@ -9,8 +9,8 @@ from scipy.spatial.transform import Rotation
 from src.lauepy.disorientation import rmat_2_quat, calc_disorient
 
 
-def find_possible_twins(config):
-    with open(Path(config['working_dir']) / "grains/grains.json") as f:
+def find_possible_twins(working_dir=None, twin_tolerance=None, verbose=True, **kwargs):
+    with open(Path(working_dir) / "grains/grains.json") as f:
         grains = json.load(f)
 
     rot_mats = [np.array(grains[grain]['Rot_mat']) for grain in grains]
@@ -21,25 +21,25 @@ def find_possible_twins(config):
     q1 = rmat_2_quat([np.array(grains[keys[c[0]]]['Rot_mat']) for c in comb])
     q2 = rmat_2_quat([np.array(grains[keys[c[1]]]['Rot_mat']) for c in comb])
     misorientation = calc_disorient(q1, q2)
-    good_ind = np.where(np.absolute(misorientation - 60) < config['twin_tolerance'])[0]
+    good_ind = np.where(np.absolute(misorientation - 60) < twin_tolerance)[0]
     inds = np.array([comb[g] for g in good_ind])
-    if config['verbose']:
+    if verbose:
         print("Possible twins:")
         print(inds-1)
         print()
-    with open(Path(config['working_dir']) / "twins/possible_twins.txt", 'w') as file:
+    with open(Path(working_dir) / "twins/possible_twins.txt", 'w') as file:
         for i in inds:
             file.write("%d %d \n" % tuple(i))
     return bool(len(inds))
 
 
-def find_twins(config):
-    with open(f"{config['working_dir']}/grains/grains.json", 'r') as f:
+def find_twins(working_dir=None, twin_tolerance=None, **kwargs):
+    with open(f"{working_dir}/grains/grains.json", 'r') as f:
         grains = json.load(f)
 
     keys = list(grains)
 
-    inds = np.array(np.loadtxt(f"{config['working_dir']}/twins/possible_twins.txt", dtype=np.int32))
+    inds = np.array(np.loadtxt(f"{working_dir}/twins/possible_twins.txt", dtype=np.int32))
     if np.shape(inds) == (2,):
         inds = [inds]
     e1 = np.array(
@@ -48,7 +48,7 @@ def find_twins(config):
         [Rotation.from_matrix(np.array(grains[keys[i[1]]]['Rot_mat']).T).as_euler('ZXZ', degrees=True) for i in inds])
     es = np.hstack([e1, e2])
     id_pairs = [(keys[i[0]], keys[i[1]]) for i in inds]
-    angle_path = f"{config['working_dir']}/twins/angle_list.txt"
+    angle_path = f"{working_dir}/twins/angle_list.txt"
     with open(angle_path, 'w') as file:
         file.writelines('angles')
         for e in es:
@@ -60,19 +60,17 @@ def find_twins(config):
     if len(list(data.shape)) == 1:
         data = np.array([data])
     data = data[:, 2:6]
-    print(data.shape)
     #     data = np.concatenate(data,axis=1)
     s1 = [np.array(grains[keys[i[0]]]['Spec_Orientation']).ravel() for i in inds]
     s2 = [np.array(grains[keys[i[1]]]['Spec_Orientation']).ravel() for i in inds]
     ss = np.hstack([s1, s2])
-    print(ss.shape)
     twin_orientations = data
 
     twin_orientations = [t for t in twin_orientations
-                         if np.sum(np.absolute(np.absolute(t[-3:]) - 0.577)) < config['twin_tolerance']]
+                         if np.sum(np.absolute(np.absolute(t[-3:]) - 0.577)) < twin_tolerance]
     for twin in twin_orientations:
         twin[-3:] = twin[-3:] / twin[-3:].min()
-    with open(f"{config['working_dir']}/twins/hiconf_twins.txt", 'w') as file:
+    with open(f"{working_dir}/twins/hiconf_twins.txt", 'w') as file:
         file.writelines('ID_A ID_B Spec_Ori1 Spec_Ori2 mis ax1 ax2 ax3')
         for i, tw in enumerate(twin_orientations):
             file.write('\n%s %s %.2f %.3f %.3f %.3f' % (id_pairs[i] + tuple(tw)))

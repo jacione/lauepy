@@ -10,6 +10,7 @@ import src.lauepy.utils as ut
 import src.lauepy.peaks as pk
 import src.lauepy.auto_laue as al
 import src.lauepy.make_grain_dict as grain
+import src.lauepy.find_twins as twin
 
 
 @click.command()
@@ -33,7 +34,10 @@ def main(config):
     sim.index()
 
     # Grain mapping and spec output
-    grain.make_grain_dict(config)
+    grain.make_grain_dict(**config)
+    twin.find_possible_twins(**config)
+    twin.find_twins(**config)
+    twin.cleanup_directory()
 
 
 if __name__ == '__main__':

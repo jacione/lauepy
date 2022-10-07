@@ -112,13 +112,23 @@ LAUE_SAM = ["laue_sample_mis_err", "laue_sample_tolerance"]
 LAUE_OTH = ["grain_tolerance", "grain_threshold", "twin_tolerance"]
 
 
+LAST_CONF = Path(f"{Path(__file__).parent}/prev_conf.txt")
+
+
 class LaueApp:
     def __init__(self, conf_path=None):
         self.root = tk.Tk()
         self.root.title("LauePy")
 
         if conf_path is None:
-            conf_path = f"{Path(__file__).parents[2]}/config_example/config.yml"
+            try:
+                conf_path = LAST_CONF.read_text()
+            except FileNotFoundError:
+                print("couldn't find last config file")
+                conf_path = f"{Path(__file__).parents[2]}/config_example/config.yml"
+                LAST_CONF.touch()
+                LAST_CONF.write_text(conf_path)
+
         self.conf_path = conf_path
         self.config = {key: tk.StringVar(self.root, value="") for key in PARAMS.keys()}
         self.load_config(conf_path)
@@ -197,6 +207,8 @@ class LaueApp:
             print()
             print(str(error))
             return False
+        LAST_CONF.write_text(self.conf_path)
+        print(LAST_CONF.read_text())
         return True
 
     def load_config(self, conf_path=None):
@@ -256,10 +268,10 @@ class LaueApp:
             prep.cleanup_images(**cfg)
 
             # Peak finding
-            peak_dict = pk.find_substrate_peaks({}, cfg)
-            peak_dict = pk.find_sample_peaks(peak_dict, cfg)
-            peak_dict = pk.record_positions(peak_dict, cfg)
-            pk.save_peaks(peak_dict, cfg)
+            peak_dict = pk.find_substrate_peaks({}, **cfg)
+            peak_dict = pk.find_sample_peaks(peak_dict, **cfg)
+            peak_dict = pk.record_positions(peak_dict, **cfg)
+            pk.save_peaks(peak_dict, **cfg)
 
             # Laue indexing
             for p in Path(f"{cfg['working_dir']}/grains").iterdir():
@@ -268,11 +280,11 @@ class LaueApp:
             sim.index()
 
             # Grain finding
-            grain.make_grain_dict(cfg)
+            grain.make_grain_dict(**cfg)
 
             # Twin finding
-            if twins.find_possible_twins(cfg):
-                twins.find_twins(cfg)
+            if twins.find_possible_twins(**cfg):
+                twins.find_twins(**cfg)
                 twins.cleanup_directory()
         clock = time.perf_counter() - clock
         print(f"\nTotal runtime: {int(clock//60)} min, {int(clock%60)} sec")
@@ -316,14 +328,15 @@ class LaueApp:
             peak_dict = pk.record_positions(peak_dict, **cfg)
             pk.save_peaks(peak_dict, **cfg)
 
+
     def run_laue(self):
         if self.save_config():
             cfg = ut.read_config(self.conf_path)
             sim = al.AutoLaue(cfg)
             sim.index()
-            grain.make_grain_dict(cfg)
-            if twins.find_possible_twins(cfg):
-                twins.find_twins(cfg)
+            grain.make_grain_dict(**cfg)
+            if twins.find_possible_twins(**cfg):
+                twins.find_twins(**cfg)
                 twins.cleanup_directory()
 
     def run_laue_index(self):
@@ -335,13 +348,13 @@ class LaueApp:
     def run_laue_grains(self):
         if self.save_config():
             cfg = ut.read_config(self.conf_path)
-            grain.make_grain_dict(cfg)
+            grain.make_grain_dict(**cfg)
 
     def run_laue_twins(self):
         if self.save_config():
             cfg = ut.read_config(self.conf_path)
-            if twins.find_possible_twins(cfg):
-                twins.find_twins(cfg)
+            if twins.find_possible_twins(**cfg):
+                twins.find_twins(**cfg)
                 twins.cleanup_directory()
 
 
@@ -399,4 +412,4 @@ class CreateToolTip(object):
 
 
 if __name__ == '__main__':
-    LaueApp("/home/beams/CXDUSER/34idc-work/2022/LauePUP422/Analysis/lauepy_output/scan_0261/config.yml")
+    LaueApp()

@@ -23,6 +23,8 @@ def load_peaks(working_dir=None, **kwargs):
         with open(f"{working_dir}/peaks/peaks.json", 'r') as f:
             return json.load(f)
     except FileNotFoundError:
+        print("Could not find peak dictionary at:")
+        print(f"{working_dir}/peaks/peaks.json")
         return {}
 
 
@@ -101,8 +103,9 @@ def find_sample_peaks(peak_dict, working_dir=None, pkid_sample_threshold=None, p
     working_dir = working_dir
 
     # Load up the image files into a 3D numpy array
+    print("Loading images...")
     files = sorted(Path(f"{working_dir}/clean_images").iterdir())
-    img_stack = np.array([tifffile.imread(f'{f}') for f in files], dtype='i')
+    img_stack = np.array([tifffile.imread(f'{f}') for f in pbar(files)], dtype='i')
 
     # Set the peak-finding parameters
     threshold = np.std(img_stack, axis=(1, 2)) * pkid_sample_threshold

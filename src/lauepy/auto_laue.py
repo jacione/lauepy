@@ -17,6 +17,7 @@ from scipy.spatial.transform import Rotation
 from matplotlib import pyplot as plt
 from progressbar import progressbar as pbar
 
+from src.lauepy.utils import LAUEPY_DIR
 import src.lauepy.forward_sim as fsim
 import src.lauepy.peaks as pk
 import src.lauepy.rlv_to_spec as so
@@ -42,7 +43,7 @@ class AutoLaue:
         self.config = config
         self.system = sys.platform
         self.working_dir = config['working_dir']
-        self.peak_dict = pk.load_peaks(config)
+        self.peak_dict = pk.load_peaks(**config)
         self.phichitheta = self.peak_dict['info']['angles']
 
         self.times = None
@@ -77,7 +78,7 @@ class AutoLaue:
         self.tolerance = self.config[f'laue_{name}_tolerance']
         self.frequency = 0
         self.mis_err = self.config[f'laue_{name}_mis_err']
-        with open(f'{self.config["lauepy_dir"]}/crystals/{self.config[name]}.json') as f:
+        with open(f'{LAUEPY_DIR}/crystals/{self.config[name]}.json') as f:
             xtal_params = json.load(f)
 
         self.material = xtal_params['material']
@@ -169,7 +170,7 @@ class AutoLaue:
                 q_z = q_z / total_qhat
 
                 frame_data['G_vectors'][i] = (q_x, q_y, q_z)
-        pk.save_peaks(self.peak_dict, self.config)
+        pk.save_peaks(self.peak_dict, **self.config)
         return
 
     def write_mat_params(self, gvectors):
@@ -190,7 +191,7 @@ class AutoLaue:
         # TODO: put the euler program for linux/mac/windows in the same directory and select based on current OS
 
         sub.run([
-            f'{self.config["lauepy_dir"]}/lauepy_scripts/eulerlinux',
+            f'{LAUEPY_DIR}/lauepy_scripts/eulerlinux',
             '-k', '16',
             '-t', '24',
             '-c', '72',
@@ -345,7 +346,7 @@ class AutoLaue:
                 self.set_params(substrate=False)
         with open(f"{self.working_dir}/peaks/patterns.json", 'w') as f:
             json.dump(self.pattern_dict, f)
-        pk.save_peaks(self.peak_dict, self.config)
+        pk.save_peaks(self.peak_dict, **self.config)
         return
 
     def loss_function_distance(self, xtal_rmat, xy_exp, hkl_labels):
