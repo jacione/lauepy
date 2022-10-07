@@ -6,10 +6,11 @@ import cupy as cp
 
 # convert euler angles to quaternions
 def rmat_2_quat(rmat):
-    #     rmat = np.array(rmat).T
     r = Rotation.from_matrix(rmat)
 
-    r1 = r.inv()  # to match the massif convention, where the Bunge Euler/Rotation is transformation from sample to crystal frame.
+    # Invert to match the massif convention, where the Bunge Euler/Rotation is a
+    # transformation from sample to crystal frame.
+    r1 = r.inv()
     quat = r1.as_quat()
 
     for num, val in enumerate(quat):
