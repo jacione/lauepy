@@ -1,3 +1,6 @@
+import re
+from pathlib import Path
+
 
 # inputs
 # filename - can include full pathname
@@ -5,6 +8,31 @@
 # alpha, beta, gamma  lattice angles
 # inp - in-place vector
 # outp - out of place vector
+
+
+def index_to_macro(index_file, save_dir, name):
+    with open(index_file) as f:
+        lines = f.readlines()
+
+    lattice_params = None
+    recip_lattices = []
+
+    for line in lines:
+        if line.startswith('$latticeParameters'):
+            lattice_params = re.search('{.*}', line).group(0)
+            lattice_params = [float(x) for x in re.split(", ", lattice_params[2:-2])]
+            continue
+        if line.startswith('$recip_lattice'):
+            recip_lattices.append(re.search("{.*}", line).group(0))
+    if lattice_params is None:
+        raise IOError("Could not find lattice parameters in Index.txt!")
+    for i, text in enumerate(recip_lattices):
+        text = re.sub('}{', ",", text[2:-2])
+        text = re.split(',', text)
+        hklin = [float(text[n]) for n in [0, 3, 6]]
+        hklout = [float(text[n]) for n in [1, 4, 7]]
+        grain_to_macro(str(Path(save_dir)/f"{name}_{i:03}.mac"), lattice_params, (hklin, hklout))
+
 
 def grain_to_macro(save_as, lattice_params, orientation):
 
