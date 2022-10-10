@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from adjustText import adjust_text
+from tqdm import tqdm
 
 # import src.lauepy.overlay_peaks as op
 from src.lauepy.disorientation import calc_disorient, rmat_2_quat
@@ -13,7 +14,7 @@ from src.lauepy.utils import LAUEPY_DIR
 
 def make_grain_dict(working_dir=None, substrate=None, sample=None, grain_tolerance=None, grain_threshold=None,
                     show_plots=True, **kwargs):
-    print('Grouping patterns into grains...')
+    print('Grouping patterns into grains...\n')
 
     for p in Path(f"{working_dir}/grains").iterdir():
         p.unlink()
@@ -110,8 +111,8 @@ def make_grain_dict(working_dir=None, substrate=None, sample=None, grain_toleran
 
 
 def print_grains(grains, working_dir, grain_threshold):
-    s = '################### GRAIN DICT #######################'
-    s += f'{"Grain":>10}{"RMS":>8}{"Peaks":>7}{"Frames":>8}   {"Position":<16}{"HKL-in":<16}{"HKL-out":<16}'
+    s = '################### FOUND GRAINS #######################\n'
+    s += f'{"Grain":>10}{"RMS":>8}{"Peaks":>7}{"Frames":>8}   {"Position":<16}{"HKL-in":<16}{"HKL-out":<16}\n'
     for grain in grains:
         g = grains[grain]
         num_frames = len(g['Frames'])
@@ -125,7 +126,7 @@ def print_grains(grains, working_dir, grain_threshold):
         s += f"{num_frames:>8}   "
         s += f"[{np.around(g['COM'][0], 2):>6},{np.around(g['COM'][1], 2):>6}] "
         s += f"[{hkl_in[0]:>3}, {hkl_in[1]:>3}, {hkl_in[2]:>3}] "
-        s += f"[{hkl_out[0]:>3}, {hkl_out[1]:>3}, {hkl_out[2]:>3}]"
+        s += f"[{hkl_out[0]:>3}, {hkl_out[1]:>3}, {hkl_out[2]:>3}]\n"
     (Path(working_dir)/'grains/grain_output.txt').write_text(s)
     print(s)
 

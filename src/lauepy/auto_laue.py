@@ -15,7 +15,7 @@ from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
 from matplotlib import pyplot as plt
-from progressbar import progressbar as pbar
+from tqdm import tqdm
 
 from src.lauepy.utils import LAUEPY_DIR
 import src.lauepy.forward_sim as fsim
@@ -39,6 +39,7 @@ find_hkls = re.compile(r"\[\s+\d+]\s+\(.+?\)\s+\((.+?)\)")
 class AutoLaue:
 
     def __init__(self, config):
+        print("\n################### AUTO-LAUE INDEXATION #######################")
         # These variables must be defined in self.index()
         self.config = config
         self.system = sys.platform
@@ -306,13 +307,13 @@ class AutoLaue:
         return reduced_list
 
     def index(self):
-        print("\nIndexing Laue peaks...")
+        print("Indexing Laue peaks...")
         self.pattern_ID = 1
         self.pattern_dict = {}
 
         self.calc_gs()
 
-        for frame, frame_data in pbar(self.peak_dict.items()):
+        for frame, frame_data in tqdm(self.peak_dict.items()):
             if frame.startswith('frame_'):
                 i = int(frame[-5:])  # The frame number should be the last 5 characters in the dictionary key
                 if frame_data['num_peaks'] < 3:

@@ -11,7 +11,7 @@ import cupy as cp
 import cupyx.scipy.ndimage as ndi
 import tifffile
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
-from progressbar import progressbar as pbar
+from tqdm import tqdm
 
 
 def extract_substrate(working_dir=None, data_dir=None, prep_substrate_quantile=None, prep_substrate_sigma=None,
@@ -35,9 +35,10 @@ def extract_substrate(working_dir=None, data_dir=None, prep_substrate_quantile=N
         workflow, which is based on configuration dictionaries.
     :return: None
     """
+    print("################### IMAGE PROCESSING #######################")
     print('Extracting substrate-only image...')
     files = sorted(Path(data_dir).iterdir())
-    img_stack = cp.array([tifffile.imread(f'{f}') for f in files], dtype='i')
+    img_stack = cp.array([tifffile.imread(f'{f}') for f in tqdm(files)], dtype='i')
 
     # A quantile filter over all frames removes short-lived features (such as Laue peaks!)
     # q=0.5 is a median filter
@@ -89,7 +90,7 @@ def cleanup_images(working_dir=None, data_dir=None, prep_sample_sigma=None, prep
         Path(output_dir).mkdir(parents=True)
 
     files = sorted(Path(data_dir).iterdir())
-    img_stack = cp.array([tifffile.imread(f'{f}') for f in files], dtype='i')
+    img_stack = cp.array([tifffile.imread(f'{f}') for f in tqdm(files)], dtype='i')
 
     t0 = time.perf_counter()
 
@@ -100,11 +101,11 @@ def cleanup_images(working_dir=None, data_dir=None, prep_sample_sigma=None, prep
     print('Subtracting background features...')
     sigma = prep_sample_sigma
     kernels = make_rb_kernels(prep_sample_radii)
-    for i, img in enumerate(pbar(img_stack)):
+    for i, img in enumerate(tqdm(img_stack)):
         img_stack[i] = remove_background(img_stack[i], sigma, kernels)
 
     print('Saving cleaned-up images...')
-    for i, img in enumerate(pbar(img_stack)):
+    for i, img in enumerate(tqdm(img_stack)):
         tifffile.imsave(f'{output_dir}/img_{i:05}.tiff', cp.array(img, dtype='i').get())
         
     t1 = time.perf_counter()

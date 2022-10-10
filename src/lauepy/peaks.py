@@ -8,7 +8,7 @@ import scipy.ndimage as ndi
 import tifffile
 from skimage.feature import peak_local_max
 from skimage import draw
-from progressbar import progressbar as pbar
+from tqdm import tqdm
 
 import src.lauepy.utils as ut
 
@@ -50,7 +50,7 @@ def find_substrate_peaks(peak_dict, working_dir=None, pkid_substrate_threshold=N
     min_dist = pkid_substrate_distance
 
     print()
-    print('### Indexed substrate peaks ###')
+    print('### Locating substrate peaks ###')
     print(f'Min peak distance: {min_dist} pixels')
     print(f'Rel. peak threshold: {pkid_substrate_threshold}')
     print(f'Abs. peak threshold: {threshold:.3f}')
@@ -103,16 +103,17 @@ def find_sample_peaks(peak_dict, working_dir=None, pkid_sample_threshold=None, p
     working_dir = working_dir
 
     # Load up the image files into a 3D numpy array
+    print()
+    print('### Locating sample peaks ###')
     print("Loading images...")
     files = sorted(Path(f"{working_dir}/clean_images").iterdir())
-    img_stack = np.array([tifffile.imread(f'{f}') for f in pbar(files)], dtype='i')
+    img_stack = np.array([tifffile.imread(f'{f}') for f in tqdm(files)], dtype='i')
 
     # Set the peak-finding parameters
+    print("Determining thresholds...")
     threshold = np.std(img_stack, axis=(1, 2)) * pkid_sample_threshold
     min_dist = pkid_sample_distance
 
-    print()
-    print('### Indexed sample peaks ###')
     print(f'Min peak distance: {min_dist} pixels')
     print(f'Threshold rel: {pkid_sample_threshold}')
     print(f'Threshold mean: {np.mean(threshold):.1f}')
@@ -133,7 +134,7 @@ def find_sample_peaks(peak_dict, working_dir=None, pkid_sample_threshold=None, p
     img_stack = np.ma.array(img_stack, mask=substrate_mask)
 
     # This loop saves the peaks into a dictionary where they are organized by frame
-    for frame, img in enumerate(pbar(img_stack)):
+    for frame, img in enumerate(tqdm(img_stack)):
         peak_coords = peak_local_max(img, min_distance=min_dist, threshold_abs=threshold[frame], exclude_border=1)
         peak_dict[f'frame_{frame:05}'] = {
             'coords': np.fliplr(peak_coords).tolist(),
@@ -181,7 +182,7 @@ def overlay_peaks(config):
         else:
             plot_dir.mkdir()
         plt.figure(tight_layout=True, figsize=(10, 5), dpi=150)
-        for i, frame in enumerate(pbar(img_stack)):
+        for i, frame in enumerate(tqdm(img_stack)):
             plt.cla()
             c = np.array(peak_dict[f'frame_{i:05}']['coords']).T
             if not len(c):

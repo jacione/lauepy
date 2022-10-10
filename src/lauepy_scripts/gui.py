@@ -208,7 +208,6 @@ class LaueApp:
             print(str(error))
             return False
         LAST_CONF.write_text(self.conf_path)
-        print(LAST_CONF.read_text())
         return True
 
     def load_config(self, conf_path=None):
