@@ -121,7 +121,7 @@ def remove_bad_pixels(img_stack):
 
 
 def make_rb_kernels(radii):
-    if not isinstance(radii, list):
+    if not isinstance(radii, (list, tuple)):
         radii = [radii]
     kernels = []
     for r in radii:
