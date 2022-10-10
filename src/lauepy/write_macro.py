@@ -21,6 +21,8 @@ def index_to_macro(index_file, save_dir, name):
         if line.startswith('$latticeParameters'):
             lattice_params = re.search('{.*}', line).group(0)
             lattice_params = [float(x) for x in re.split(", ", lattice_params[2:-2])]
+            a, b, c, d, e, f = lattice_params
+            lattice_params = [a/1e9, b/1e9, c/1e9, d, e, f]
             continue
         if line.startswith('$recip_lattice'):
             recip_lattices.append(re.search("{.*}", line).group(0))
