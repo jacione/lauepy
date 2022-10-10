@@ -1,7 +1,6 @@
 import click
 import src.lauepy.image_prep as prep
-from tkinter import Tk
-from tkinter.filedialog import askdirectory
+from tkinter import Tk, filedialog
 
 
 @click.command()
@@ -17,9 +16,9 @@ def main(data_dir, output_dir, gaussian_sigma, rollingball_radius):
     """
     Tk().withdraw()
     if data_dir is None:
-        data_dir = askdirectory()
+        data_dir = filedialog.askdirectory()
     if output_dir is None:
-        output_dir = askdirectory()
+        output_dir = filedialog.askdirectory()
     prep.cleanup_images(data_dir=data_dir, working_dir=output_dir, prep_sample_sigma=gaussian_sigma,
                         prep_sample_radii=rollingball_radius)
 
