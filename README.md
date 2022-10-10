@@ -33,7 +33,7 @@ python -m build
 pip install .
 ```
 
-## Usage
+## Basic Usage
 
 The easiest way to use LauePy is by running
 ```
@@ -146,6 +146,16 @@ scan_####
     └── possible_twins.txt
 ```
 Most of these are primarily for internal use, but can be useful when debugging. The most important output files are the grain macros. These essentially program a specific grain's position, orientation, and lattice parameters into SPEC. With this information, SPEC can then calculate where to position both the sample and the diffractometer arm in order to measure a specific Bragg peak.
+
+## Alternative Usage
+There are several command-line scripts in `src/lauepy_scripts` that can be run outside of the context provided by the primary LauePy workflow. These include:
+
+| File                    | Purpose                                                          |
+|-------------------------|------------------------------------------------------------------|
+| image_prep_no_config.py | Run image processing routines on any stack of images             |
+| index_to_macro.py       | Convert any `Index.txt` file (output by Euler) into a SPEC macro |
+
+If you would like additional scripts to be implemented (I'm looking at you, Ross), please leave a note on my [issue tracker](https://github.com/jacione/lauepy/issues), since that's essentially my running to-do list.
 
 ## How to contribute
 
