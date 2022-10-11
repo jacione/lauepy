@@ -155,6 +155,11 @@ There are several command-line scripts in `src/lauepy_scripts` that can be run o
 | image_prep_no_config.py | Run image processing routines on any stack of images             |
 | index_to_macro.py       | Convert any `Index.txt` file (output by Euler) into a SPEC macro |
 
+As usual, these need to be called from the base `lauepy` (or `lauepy_dev`) directory. For details on how to use each one, enter the command
+```
+python src/lauepy_scripts/<script_name>.py --help
+```
+
 If you would like additional scripts to be implemented (I'm looking at you, Ross), please leave a note on my [issue tracker](https://github.com/jacione/lauepy/issues), since that's essentially my running to-do list.
 
 ## How to contribute
