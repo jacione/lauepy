@@ -8,8 +8,10 @@ LauePy is a python-based code library that analyzes Laue diffraction patterns co
 If you're using LauePy, there's a decent chance you're doing so at APS beamline 34-ID-C. In this case, all of the dependencies should already be installed on Sayre, and you just need to run the following commands for the initial setup:
 ```
 ssh -Y cxduser@sayre
-cd 34idc-work/2022/lauepy_dev
+cd 34idc-work/<year>/<experiment>
 conda activate lauepy
+mkdir lauepy
+git clone https://github.com/jacione/lauepy.git
 ```
 Once this is done, you can (and should) skip the rest of this section.
 
