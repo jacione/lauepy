@@ -1,5 +1,7 @@
 # LauePy
 
+[![DOI](https://zenodo.org/badge/436678407.svg)](https://zenodo.org/badge/latestdoi/436678407)
+
 LauePy is a python-based code library that analyzes Laue diffraction patterns collected from many locations on a sample---either a polycrystal or separated nanocrystals---to obtain a crystal orientation map. The Laue diffraction data is collected on a large area detector while scanning a wide-band (or "pink") x-ray beam over a sample. As a complement to Bragg coherent diffraction imaging (BCDI), it has a distinct advantage over the more common orientation-mapping technique of electron backscatter diffraction (EBSD). Because scanning Laue analysis and BCDI use almost identical setups, one can be performed directly after the other simply by inserting or removing a monochrometor.
 
 ## Installation & setup
